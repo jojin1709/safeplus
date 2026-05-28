@@ -75,6 +75,9 @@ public class MainActivity extends Activity {
     private static final int DARK_SOFT_ERROR = 0xFF450A0A;
     private static final int DARK_SOFT_BLUE = 0xFF172554;
     private static final int SURFACE_LIGHT = 0xFFF8FAFC;
+    private static final int TABLET_WIDTH_DP = 600;
+    private static final int MAX_CONTENT_WIDTH_DP = 900;
+    private static final int MAX_NAV_WIDTH_DP = 660;
     private static final int TAB_DASHBOARD = 0;
     private static final int TAB_LOGS = 1;
     private static final int TAB_PROTECTION = 2;
@@ -153,18 +156,20 @@ public class MainActivity extends Activity {
         scrollView.setFillViewport(true);
         scrollView.setBackgroundColor(color(BG));
         scrollView.setClipToPadding(true);
-        scrollView.setPadding(0, 0, 0, dp(104));
+        scrollView.setPadding(0, 0, 0, bottomScrollPadding());
 
+        FrameLayout scrollContent = new FrameLayout(this);
         contentRoot = new LinearLayout(this);
         contentRoot.setOrientation(LinearLayout.VERTICAL);
-        contentRoot.setPadding(dp(20), dp(18), dp(20), dp(22));
+        int horizontalPadding = contentHorizontalPadding();
+        contentRoot.setPadding(horizontalPadding, dp(18), horizontalPadding, dp(22));
         contentRoot.setFocusableInTouchMode(true);
-        scrollView.addView(contentRoot, new ScrollView.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams contentParams = new FrameLayout.LayoutParams(contentWidth(), -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        scrollContent.addView(contentRoot, contentParams);
+        scrollView.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         shell.addView(scrollView, new FrameLayout.LayoutParams(-1, -1));
 
-        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(76), Gravity.BOTTOM);
-        navParams.leftMargin = dp(16);
-        navParams.rightMargin = dp(16);
+        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(navWidth(), dp(isTabletLayout() ? 82 : 76), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
         navParams.bottomMargin = dp(14);
         shell.addView(buildBottomNav(), navParams);
 
@@ -264,6 +269,7 @@ public class MainActivity extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setPadding(dp(4), dp(5), dp(4), dp(4));
         item.setClickable(true);
+        item.setContentDescription(label);
         item.setOnClickListener(v -> showTab(tab));
 
         ImageView icon = new ImageView(this);
@@ -310,6 +316,7 @@ public class MainActivity extends Activity {
         logoShell.setBackground(roundStroke(CARD_BG, BORDER, 16));
         logoShell.setPadding(dp(4), dp(4), dp(4), dp(4));
         logoShell.setElevation(dp(2));
+        logoShell.setContentDescription("SafePulse logo");
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.safepulse_logo);
@@ -337,6 +344,7 @@ public class MainActivity extends Activity {
                 PRIMARY,
                 PRIMARY_SOFT
         );
+        themeToggle.setContentDescription(isDarkMode() ? "Switch to light mode" : "Switch to dark mode");
         themeToggle.setOnClickListener(v -> toggleTheme());
         actions.addView(themeToggle, new LinearLayout.LayoutParams(dp(42), dp(42)));
 
@@ -502,6 +510,16 @@ public class MainActivity extends Activity {
         LinearLayout statsGrid = new LinearLayout(this);
         statsGrid.setOrientation(LinearLayout.VERTICAL);
         addTopMargin(root, statsGrid, 16);
+
+        if (isTabletLayout()) {
+            LinearLayout row = row();
+            checkedCount = addStat(row, "Checked", "0", R.drawable.ic_stat_search, SOFT_BLUE, PRIMARY);
+            allowedCount = addStat(row, "Allowed", "0", R.drawable.ic_stat_check, SOFT_SUCCESS, SUCCESS);
+            blockRateText = addStat(row, "Block rate", "0%", R.drawable.ic_stat_trend, PRIMARY_SOFT, PRIMARY);
+            blocklistCountText = addStat(row, "Rules", "0", R.drawable.ic_stat_rules, 0xFFFFF7ED, 0xFFF97316);
+            statsGrid.addView(row);
+            return;
+        }
 
         LinearLayout rowOne = row();
         checkedCount = addStat(rowOne, "Checked", "0", R.drawable.ic_stat_search, SOFT_BLUE, PRIMARY);
@@ -1145,6 +1163,7 @@ public class MainActivity extends Activity {
     private TextView addStat(LinearLayout row, String label, String value, int iconRes, int iconBg, int iconTint) {
         LinearLayout stat = card(18, CARD_BG);
         stat.setPadding(dp(14), dp(13), dp(14), dp(12));
+        stat.setMinimumHeight(dp(isTabletLayout() ? 112 : 104));
 
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
@@ -1162,7 +1181,7 @@ public class MainActivity extends Activity {
         valueView.setIncludeFontPadding(false);
         addTopMargin(stat, valueView, 11);
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(104), 1);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
         if (row.getChildCount() > 0) params.leftMargin = dp(12);
         row.addView(stat, params);
         return valueView;
@@ -1233,6 +1252,7 @@ public class MainActivity extends Activity {
         FrameLayout frame = new FrameLayout(this);
         frame.setBackground(ripple(roundRect(bgColor, 14)));
         frame.setClickable(true);
+        frame.setFocusable(true);
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
         icon.setColorFilter(color(iconTint));
@@ -1354,6 +1374,31 @@ public class MainActivity extends Activity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private boolean isTabletLayout() {
+        return getResources().getConfiguration().screenWidthDp >= TABLET_WIDTH_DP;
+    }
+
+    private int contentWidth() {
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int sideGutter = isTabletLayout() ? dp(48) : 0;
+        int availableWidth = Math.max(dp(280), screenWidth - sideGutter);
+        return Math.min(screenWidth, Math.min(availableWidth, dp(MAX_CONTENT_WIDTH_DP)));
+    }
+
+    private int navWidth() {
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int availableWidth = Math.max(dp(220), screenWidth - dp(32));
+        return Math.min(screenWidth, Math.min(availableWidth, dp(MAX_NAV_WIDTH_DP)));
+    }
+
+    private int contentHorizontalPadding() {
+        return dp(isTabletLayout() ? 24 : 20);
+    }
+
+    private int bottomScrollPadding() {
+        return dp(isTabletLayout() ? 114 : 104);
     }
 
     private void styleSystemBars() {

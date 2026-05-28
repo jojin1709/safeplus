@@ -34,6 +34,7 @@ Do not commit `keystore.properties` or any `.jks` file. They are ignored because
 
 ## Notes
 
+- The UI is responsive for Android phones, small screens, foldables, and tablets. Content is centered on large screens and the dashboard adapts its stats layout for tablet width.
 - DNS blocking works across apps that use normal system DNS.
 - The default DNS provider is AdGuard, and the app automatically merges multiple remote blocklists.
 - Allowlist, DNS provider, auto-update, boot start, module toggles, and per-app bypass controls are available in the Protection tab.
