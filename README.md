@@ -32,6 +32,19 @@ app/build/outputs/apk/release/app-release.apk
 
 Do not commit `keystore.properties` or any `.jks` file. They are ignored because the same release key is required for future app updates.
 
+## Releases and Updates
+
+GitHub pushes update the source code only. Existing Android users do not automatically receive updates just because code is pushed to GitHub.
+
+To update an installed APK:
+
+1. Increase `versionCode` in `app/build.gradle`.
+2. Build a new signed release APK with the same release keystore.
+3. Upload the APK to a new GitHub Release.
+4. Users download and install the new APK, or the app needs a future in-app updater / Play Store distribution.
+
+Android accepts the update only when the package id stays `com.jojinjohn.safepulse`, the APK is signed with the same key, and `versionCode` is higher than the installed version.
+
 ## Notes
 
 - The UI is responsive for Android phones, small screens, foldables, and tablets. Content is centered on large screens and the dashboard adapts its stats layout for tablet width.
