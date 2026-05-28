@@ -69,6 +69,9 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "googletagservices.com",
             "googletagservices.l.google.com",
             "ade.googlesyndication.com",
+            "imasdk.googleapis.com",
+            "static.doubleclick.net",
+            "video-stats.l.google.com",
             "fundingchoices.google.com",
             "fundingchoicesmessages.google.com",
             "mobileads.google.com",
@@ -386,16 +389,20 @@ public class AdBlockVpnService extends VpnService implements Runnable {
     }
 
     private String blockReason(String host) {
+        return blockReasonForHost(this, blocklist, host);
+    }
+
+    public static String blockReasonForHost(android.content.Context context, Set<String> blocklist, String host) {
         if (host == null || host.isEmpty()) return null;
         String name = host.toLowerCase(Locale.ROOT);
-        if (AppSettings.isAllowed(this, name)) return null;
-        if (AppSettings.isDohGuardEnabled(this) && isKnownDohHost(name)) return "Encrypted DNS";
-        if (AppSettings.isNeverConsentEnabled(this) && isNeverConsentHost(name)) return "Never-consent";
-        if (AppSettings.isRedirectProtectionEnabled(this) && isRedirectHost(name)) return "Redirect protection";
-        if (AppSettings.isAntiTrackingEnabled(this) && isTrackingHost(name)) return "Anti-tracking";
-        if (AppSettings.isAggressiveBlockingEnabled(this) && isAggressiveAdHost(name)) return "Ads / tracker";
+        if (AppSettings.isAllowed(context, name)) return null;
+        if (AppSettings.isDohGuardEnabled(context) && isKnownDohHost(name)) return "Encrypted DNS";
+        if (AppSettings.isNeverConsentEnabled(context) && isNeverConsentHost(name)) return "Never-consent";
+        if (AppSettings.isRedirectProtectionEnabled(context) && isRedirectHost(name)) return "Redirect protection";
+        if (AppSettings.isAntiTrackingEnabled(context) && isTrackingHost(name)) return "Anti-tracking";
+        if (AppSettings.isAggressiveBlockingEnabled(context) && isAggressiveAdHost(name)) return "Ads / tracker";
         while (!name.isEmpty()) {
-            if (blocklist.contains(name)) return "Blocklist";
+            if (blocklist != null && blocklist.contains(name)) return "Blocklist";
             int dot = name.indexOf('.');
             if (dot < 0) break;
             name = name.substring(dot + 1);
@@ -403,23 +410,23 @@ public class AdBlockVpnService extends VpnService implements Runnable {
         return null;
     }
 
-    private boolean isAggressiveAdHost(String host) {
+    private static boolean isAggressiveAdHost(String host) {
         return matchesModuleHost(host, AGGRESSIVE_DOMAINS, AGGRESSIVE_LABELS);
     }
 
-    private boolean isTrackingHost(String host) {
+    private static boolean isTrackingHost(String host) {
         return matchesModuleHost(host, TRACKER_DOMAINS, TRACKER_LABELS);
     }
 
-    private boolean isNeverConsentHost(String host) {
+    private static boolean isNeverConsentHost(String host) {
         return matchesModuleHost(host, CONSENT_DOMAINS, CONSENT_LABELS);
     }
 
-    private boolean isRedirectHost(String host) {
+    private static boolean isRedirectHost(String host) {
         return matchesModuleHost(host, REDIRECT_DOMAINS, REDIRECT_LABELS);
     }
 
-    private boolean matchesModuleHost(String host, String[] domains, String[] labelsToMatch) {
+    private static boolean matchesModuleHost(String host, String[] domains, String[] labelsToMatch) {
         String name = host.toLowerCase(Locale.ROOT);
         while (!name.isEmpty()) {
             for (String domain : domains) {
@@ -445,7 +452,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
         return false;
     }
 
-    private boolean isKnownDohHost(String host) {
+    private static boolean isKnownDohHost(String host) {
         String name = host.toLowerCase(Locale.ROOT);
         while (!name.isEmpty()) {
             for (String dohDomain : DOH_DOMAINS) {

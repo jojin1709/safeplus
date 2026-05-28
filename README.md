@@ -27,6 +27,8 @@ Android may ask for permission to install apps from the browser or file manager.
 - Light and dark mode
 - Responsive UI for phones, foldables, tablets, Android TV, and Fire TV
 - Android TV / Fire TV launcher support with a remote-friendly interface
+- In-app diagnostics screen for VPN, DNS, blocklist, Private DNS, battery, notification, and device-mode status
+- Blocking self-test that checks the same rule decisions used by the VPN service
 - Free in-app update checker using GitHub Releases
 
 ## Important Limits
@@ -38,6 +40,8 @@ SafePulse is a DNS/VPN-style blocker. It can block domain lookups, but it cannot
 - Apps using Private DNS, DoH, DoT, hardcoded DNS, or their own encrypted network stack may bypass DNS filtering.
 - Blocking too aggressively can break videos, logins, payments, or app loading, so SafePulse keeps playback-critical hosts safer by default.
 - Streaming apps on Fire TV may still show ads when ads and video streams come from the same service infrastructure.
+
+SafePulse blocks known YouTube ad, stats, Google ads, and IMA SDK DNS hosts where it can do that safely. It does not block broad `googlevideo.com` delivery hosts because those hosts can carry the actual video stream.
 
 ## Fire TV / Android TV
 
@@ -69,7 +73,22 @@ For updates to work:
 1. Keep the package id as `com.jojinjohn.safepulse`.
 2. Increase `versionCode` in `app/build.gradle`.
 3. Build the APK with the same release signing key.
-4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.2.1.apk`.
+4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.3.0.apk`.
+
+## Diagnostics
+
+Open **Checks** in the bottom navigation to see:
+
+- VPN running state
+- VPN permission status
+- selected DNS provider and upstream servers
+- bundled and remote blocklist counts
+- Private DNS status
+- battery and notification status
+- phone/tablet vs Android TV / Fire TV mode
+- a blocking test for known ad, tracker, redirect, YouTube-safe, and normal domains
+
+The blocking test is honest: it checks whether SafePulse's current rules would block the domain. If protection is stopped, it reports that the test is rules-only and not live traffic filtering.
 
 ## Build
 
@@ -98,6 +117,22 @@ app/build/outputs/apk/release/app-release.apk
 ```
 
 Do not commit `keystore.properties` or any `.jks` file. The same release key is required for future app updates.
+
+## GitHub Actions
+
+This repository includes a free GitHub Actions workflow that builds the debug APK on pushes, pull requests, and manual runs. Signed release APKs still need the private release keystore and should be built locally or with encrypted CI secrets.
+
+## Real-Device Testing
+
+Before publishing a release, test on at least one Android phone and one Android TV / Fire TV device:
+
+1. Install the latest universal APK.
+2. Open SafePulse and approve VPN permission.
+3. Complete the setup checklist.
+4. Start protection.
+5. Open **Checks** and run the blocking test.
+6. Browse a normal website to confirm loading still works.
+7. Open YouTube or a streaming app to confirm playback is not broken.
 
 ## Project Structure
 

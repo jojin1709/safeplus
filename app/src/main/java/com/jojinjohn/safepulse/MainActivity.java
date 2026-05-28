@@ -92,9 +92,11 @@ public class MainActivity extends Activity {
     private static final int TAB_DASHBOARD = 0;
     private static final int TAB_LOGS = 1;
     private static final int TAB_PROTECTION = 2;
-    private static final int TAB_ABOUT = 3;
-    private static final String APP_VERSION_NAME = "1.2.1";
-    private static final long APP_VERSION_CODE = 4L;
+    private static final int TAB_DIAGNOSTICS = 3;
+    private static final int TAB_ABOUT = 4;
+    private static final int TAB_COUNT = 5;
+    private static final String APP_VERSION_NAME = "1.3.0";
+    private static final long APP_VERSION_CODE = 5L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -127,6 +129,8 @@ public class MainActivity extends Activity {
     private TextView batterySetupStatusText;
     private TextView notificationSetupStatusText;
     private TextView privateDnsSetupStatusText;
+    private TextView diagnosticsText;
+    private TextView testResultText;
     private Button vpnSetupButton;
     private Button batterySetupButton;
     private Button notificationSetupButton;
@@ -221,6 +225,9 @@ public class MainActivity extends Activity {
         } else if (tab == TAB_PROTECTION) {
             buildHeader(contentRoot, "Protection modules");
             buildSettings(contentRoot);
+        } else if (tab == TAB_DIAGNOSTICS) {
+            buildHeader(contentRoot, "Diagnostics and tests");
+            buildDiagnostics(contentRoot);
         } else {
             buildHeader(contentRoot, "App details");
             buildAbout(contentRoot);
@@ -251,6 +258,8 @@ public class MainActivity extends Activity {
         batterySetupStatusText = null;
         notificationSetupStatusText = null;
         privateDnsSetupStatusText = null;
+        diagnosticsText = null;
+        testResultText = null;
         vpnSetupButton = null;
         batterySetupButton = null;
         notificationSetupButton = null;
@@ -274,7 +283,8 @@ public class MainActivity extends Activity {
         navItems = new LinearLayout[]{
                 navItem("Dashboard", TAB_DASHBOARD, R.drawable.ic_nav_home),
                 navItem("Logs", TAB_LOGS, R.drawable.ic_nav_activity),
-                navItem("Protection", TAB_PROTECTION, R.drawable.ic_nav_shield),
+                navItem("Protect", TAB_PROTECTION, R.drawable.ic_nav_shield),
+                navItem("Checks", TAB_DIAGNOSTICS, R.drawable.ic_stat_check),
                 navItem("About", TAB_ABOUT, R.drawable.ic_nav_info)
         };
         for (LinearLayout item : navItems) {
@@ -307,8 +317,8 @@ public class MainActivity extends Activity {
         addTopMargin(item, title, 3, new LinearLayout.LayoutParams(-1, -2));
 
         if (navIcons == null) {
-            navIcons = new ImageView[4];
-            navLabels = new TextView[4];
+            navIcons = new ImageView[TAB_COUNT];
+            navLabels = new TextView[TAB_COUNT];
         }
         navIcons[tab] = icon;
         navLabels[tab] = title;
@@ -823,6 +833,52 @@ public class MainActivity extends Activity {
         addTopMargin(settings, clearStats, 16, new LinearLayout.LayoutParams(-1, dp(50)));
     }
 
+    private void buildDiagnostics(LinearLayout root) {
+        LinearLayout diagnostics = card(20, CARD_BG);
+        diagnostics.setPadding(dp(18), dp(18), dp(18), dp(18));
+        addTopMargin(root, diagnostics, 16);
+        diagnostics.addView(sectionTitle("Diagnostics", "Real blocker health"));
+
+        diagnosticsText = text("", 13, MUTED, false);
+        diagnosticsText.setLineSpacing(dp(5), 1.0f);
+        diagnosticsText.setBackground(roundRect(0xFFF8FAFC, 16));
+        diagnosticsText.setPadding(dp(14), dp(12), dp(14), dp(12));
+        addTopMargin(diagnostics, diagnosticsText, 14);
+
+        Button refresh = smallButton("Refresh diagnostics");
+        refresh.setOnClickListener(v -> renderDiagnosticsState());
+        addTopMargin(diagnostics, refresh, 12, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        LinearLayout test = card(20, CARD_BG);
+        test.setPadding(dp(18), dp(18), dp(18), dp(18));
+        addTopMargin(root, test, 16);
+        test.addView(sectionTitle("Blocking test", "Checks current rules"));
+
+        TextView testNote = text("This test uses the same decision logic as the VPN service. It confirms the rules would block known ad/tracker domains and allow a normal safe domain.", 13, MUTED, false);
+        testNote.setLineSpacing(dp(4), 1.0f);
+        addTopMargin(test, testNote, 10);
+
+        Button runTest = smallButton("Run blocking test");
+        runTest.setOnClickListener(v -> runBlockingTest(runTest));
+        addTopMargin(test, runTest, 12, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        testResultText = text("No test run yet.", 13, MUTED, false);
+        testResultText.setLineSpacing(dp(5), 1.0f);
+        testResultText.setBackground(roundRect(0xFFF8FAFC, 16));
+        testResultText.setPadding(dp(14), dp(12), dp(14), dp(12));
+        addTopMargin(test, testResultText, 12);
+
+        LinearLayout tv = card(20, CARD_BG);
+        tv.setPadding(dp(18), dp(18), dp(18), dp(18));
+        addTopMargin(root, tv, 16);
+        tv.addView(sectionTitle("Fire TV setup", "Remote-friendly install notes"));
+        TextView tvText = text("On Fire TV, install the universal APK, approve unknown-app installation, allow the VPN permission, then use the remote center button to start or stop protection. Keep Private DNS off where available so apps do not bypass SafePulse.", 13, MUTED, false);
+        tvText.setLineSpacing(dp(4), 1.0f);
+        addTopMargin(tv, tvText, 10);
+
+        renderDiagnosticsState();
+    }
+
     private void buildAbout(LinearLayout root) {
         LinearLayout about = card(20, CARD_BG);
         about.setPadding(dp(18), dp(18), dp(18), dp(18));
@@ -835,6 +891,14 @@ public class MainActivity extends Activity {
         Button linkedin = smallButton("LinkedIn profile");
         linkedin.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.linkedin.com/in/jojin-john/"))));
         addTopMargin(about, linkedin, 12, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        Button privacy = smallButton("Privacy policy");
+        privacy.setOnClickListener(v -> openUrl("https://github.com/jojin1709/safeplus/blob/main/PRIVACY.md"));
+        addTopMargin(about, privacy, 10, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        Button changelog = smallButton("Changelog");
+        changelog.setOnClickListener(v -> openUrl("https://github.com/jojin1709/safeplus/blob/main/CHANGELOG.md"));
+        addTopMargin(about, changelog, 10, new LinearLayout.LayoutParams(-1, dp(48)));
 
         LinearLayout updates = card(20, CARD_BG);
         updates.setPadding(dp(18), dp(18), dp(18), dp(18));
@@ -1005,7 +1069,11 @@ public class MainActivity extends Activity {
         if (latestRelease != null) {
             target = latestRelease.apkUrl.isEmpty() ? latestRelease.releaseUrl : latestRelease.apkUrl;
         }
-        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(target)));
+        openUrl(target);
+    }
+
+    private void openUrl(String url) {
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     }
 
     private String currentVersionName() {
@@ -1177,6 +1245,7 @@ public class MainActivity extends Activity {
         if (logsText != null) logsText.setText(running ? formatLogs(stats) : "No log entries yet.");
         renderSetupState();
         renderSettingsState();
+        renderDiagnosticsState();
     }
 
     private void renderSetupState() {
@@ -1243,6 +1312,87 @@ public class MainActivity extends Activity {
         if (privateDnsStatusText != null) {
             privateDnsStatusText.setText("Private DNS: " + privateDnsStatus());
         }
+    }
+
+    private void renderDiagnosticsState() {
+        if (diagnosticsText == null) return;
+        boolean running = AdBlockVpnService.isRunning();
+        boolean vpnReady = VpnService.prepare(this) == null;
+        boolean batteryReady = isBatteryOptimizationIgnored();
+        boolean notificationsReady = hasNotificationPermission();
+        boolean privateDnsOk = isPrivateDnsOk();
+        long lastUpdate = BlocklistManager.lastUpdate(this);
+        int bundled = BlocklistManager.bundledCount(this);
+        int remote = BlocklistManager.remoteCount(this);
+        String lastUpdateText = lastUpdate == 0L ? "not downloaded yet" : timeFormat.format(new Date(lastUpdate));
+        String blocklistError = BlocklistManager.lastError(this);
+
+        StringBuilder builder = new StringBuilder();
+        appendDiagnostic(builder, "Protection", running ? "running" : "stopped", running);
+        appendDiagnostic(builder, "VPN permission", vpnReady ? "allowed" : "required", vpnReady);
+        appendDiagnostic(builder, "DNS provider", AppSettings.getDnsProvider(this) + " (" + TextUtils.join(", ", AppSettings.getDnsServers(this)) + ")", true);
+        appendDiagnostic(builder, "Blocklist", formatNumber(bundled + remote) + " rules (" + formatNumber(bundled) + " bundled, " + formatNumber(remote) + " remote)", bundled + remote > 0);
+        appendDiagnostic(builder, "Remote update", lastUpdateText, blocklistError == null || blocklistError.isEmpty());
+        appendDiagnostic(builder, "Private DNS", privateDnsStatus(), privateDnsOk);
+        appendDiagnostic(builder, "Battery", batteryReady ? "optimization ignored" : "may restrict background service", batteryReady);
+        appendDiagnostic(builder, "Notifications", notificationsReady ? "allowed or not required" : "permission recommended", notificationsReady);
+        appendDiagnostic(builder, "Device mode", currentDeviceLabel(), true);
+        builder.append("\nYouTube: best-effort DNS blocking. SafePulse does not block shared googlevideo hosts because that can break playback.");
+        diagnosticsText.setText(builder.toString());
+    }
+
+    private void appendDiagnostic(StringBuilder builder, String label, String value, boolean healthy) {
+        if (builder.length() > 0) builder.append('\n');
+        builder.append(healthy ? "OK  " : "WARN ")
+                .append(label)
+                .append(": ")
+                .append(value);
+    }
+
+    private void runBlockingTest(Button button) {
+        if (testResultText != null) {
+            testResultText.setText("Running rule test...");
+        }
+        button.setEnabled(false);
+        button.setText("Testing...");
+
+        new Thread(() -> {
+            Set<String> effectiveBlocklist = BlocklistManager.loadEffectiveBlocklist(this);
+            StringBuilder result = new StringBuilder();
+            int passed = 0;
+            int total = 0;
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "googleads.g.doubleclick.net", true);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "imasdk.googleapis.com", true);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "api.segment.io", true);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "clickserve.dartsearch.net", true);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "example.com", false);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "youtube.com", false);
+
+            result.insert(0, "Passed " + passed + " of " + total + " checks.\n");
+            if (!AdBlockVpnService.isRunning()) {
+                result.append("\nProtection is stopped, so this is a rules-only test. Start protection to apply these decisions to device traffic.");
+            } else {
+                result.append("\nProtection is running, so matching DNS requests should be blocked live.");
+            }
+
+            handler.post(() -> {
+                if (testResultText != null) testResultText.setText(result.toString());
+                button.setEnabled(true);
+                button.setText("Run blocking test");
+            });
+        }).start();
+    }
+
+    private int appendRuleTest(StringBuilder builder, Set<String> effectiveBlocklist, String host, boolean expectedBlocked) {
+        String reason = AdBlockVpnService.blockReasonForHost(this, effectiveBlocklist, host);
+        boolean blocked = reason != null;
+        boolean passed = blocked == expectedBlocked;
+        if (builder.length() > 0) builder.append('\n');
+        builder.append(passed ? "PASS " : "FAIL ")
+                .append(host)
+                .append(" -> ")
+                .append(blocked ? "blocked (" + reason + ")" : "allowed");
+        return passed ? 1 : 0;
     }
 
     private String formatRecentBlocks(StatsStore.Snapshot stats) {
