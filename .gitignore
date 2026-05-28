@@ -1,0 +1,18 @@
+.gradle/
+build/
+app/build/
+
+# Local signing secrets. Do not commit these.
+keystore.properties
+*.jks
+*.keystore
+
+# IDE / OS files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local logs and screenshots
+*.log
+*.png.tmp
