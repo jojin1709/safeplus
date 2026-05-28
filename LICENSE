@@ -1,0 +1,33 @@
+SafePulse Proprietary License
+
+Copyright (c) 2026 Jojin John. All rights reserved.
+
+This repository, including the SafePulse source code, APKs, logo, name, UI design,
+documentation, build scripts, release assets, and related files, is the exclusive
+property of Jojin John unless otherwise stated in writing.
+
+Permission is granted only to view this repository and download official SafePulse
+release APKs for personal use.
+
+No other rights are granted. Without prior written permission from Jojin John, you
+may not:
+
+- copy, fork, clone, reproduce, publish, or redistribute this project;
+- modify, adapt, translate, rebrand, or create derivative works from this project;
+- sell, rent, sublicense, host, package, or commercially use this project;
+- use the SafePulse name, logo, UI, branding, or release assets in another app;
+- remove or alter copyright, ownership, or license notices;
+- use any part of this project to train, generate, or build a competing product.
+
+Contributions, pull requests, patches, issues, or suggestions do not grant any
+ownership or license rights. If Jojin John accepts a contribution, the contributor
+agrees that Jojin John may use, modify, and distribute that contribution as part
+of SafePulse without further permission, payment, or obligation.
+
+This software is provided "as is", without warranty of any kind, express or
+implied, including but not limited to warranties of merchantability, fitness for a
+particular purpose, non-infringement, availability, or security. Jojin John is not
+liable for any claim, damage, loss, or other liability arising from use of the
+software.
+
+Any permission not explicitly granted in this license is reserved by Jojin John.

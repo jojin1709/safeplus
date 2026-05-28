@@ -1,8 +1,60 @@
-# SafePulse APK
+# SafePulse
 
-This is a small Android VPNService app for SafePulse (`com.jojinjohn.safepulse`). Protection starts only when the user taps **Start protection**. The service runs in the foreground with a notification, and reboot start is controlled by the in-app **Start after reboot** setting.
+SafePulse is a clean Android DNS/VPN protection app built by [Jojin John](https://www.linkedin.com/in/jojin-john/). It helps block ad, tracker, consent, redirect, and risky-domain requests across Android apps that use normal system DNS.
 
-It blocks DNS lookups for domains listed in `app/src/main/assets/blocklist.txt` plus remote sources configured inside the app. This is not a direct port of the browser extension. Android apps cannot use Chrome/Firefox extension APIs to block every request across the phone, so a VPN/DNS-style service is the normal APK approach.
+The app starts only when the user taps **Start protection**. It runs as an Android `VpnService` with a foreground notification and can be stopped from inside the app at any time.
+
+## Download
+
+Get the latest APK from GitHub Releases:
+
+```text
+https://github.com/jojin1709/safeplus/releases/latest
+```
+
+Android may ask for permission to install apps from the browser or file manager. The app also asks for VPN approval because DNS filtering is handled through Android's VPN service APIs.
+
+## Features
+
+- DNS-level ad and tracker blocking
+- Anti-tracking, never-consent, redirect-protection, and encrypted-DNS guard options
+- Auto-updating remote blocklists
+- Allowlist for domains that should not be blocked
+- Per-app bypass controls
+- First-install setup checklist for VPN, notification, battery, and Private DNS settings
+- Live blocked/checked/allowed counters
+- Recent blocked domain list and searchable logs
+- Light and dark mode
+- Responsive UI for phones, foldables, and tablets
+- Free in-app update checker using GitHub Releases
+
+## Important Limits
+
+SafePulse is a DNS/VPN-style blocker. It can block domain lookups, but it cannot rewrite app screens like a browser extension.
+
+- It cannot remove empty ad containers inside apps or websites.
+- It cannot guarantee official YouTube app ad blocking because YouTube can serve ads and videos from shared Google video infrastructure.
+- Apps using Private DNS, DoH, DoT, hardcoded DNS, or their own encrypted network stack may bypass DNS filtering.
+- Blocking too aggressively can break videos, logins, payments, or app loading, so SafePulse keeps playback-critical hosts safer by default.
+
+## Updates
+
+SafePulse includes **About > App updates**.
+
+The updater checks:
+
+```text
+https://api.github.com/repos/jojin1709/safeplus/releases/latest
+```
+
+When a newer release is available, the app shows **Update now** and opens the APK download. Android still requires the user to approve the installation.
+
+For updates to work:
+
+1. Keep the package id as `com.jojinjohn.safepulse`.
+2. Increase `versionCode` in `app/build.gradle`.
+3. Build the APK with the same release signing key.
+4. Publish the APK in a new GitHub Release.
 
 ## Build
 
@@ -12,13 +64,13 @@ Install Android Studio or the Android SDK, then run:
 gradle assembleDebug
 ```
 
-The debug APK will be created at:
+The debug APK is created at:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-For a signed release build, create `keystore.properties` from `keystore.properties.example`, create the matching `.jks` key locally, then build:
+For a signed release build, create `keystore.properties` from `keystore.properties.example`, create the matching local `.jks` key, then run:
 
 ```bash
 gradle assembleRelease
@@ -30,30 +82,24 @@ The signed release APK is created at:
 app/build/outputs/apk/release/app-release.apk
 ```
 
-Do not commit `keystore.properties` or any `.jks` file. They are ignored because the same release key is required for future app updates.
+Do not commit `keystore.properties` or any `.jks` file. The same release key is required for future app updates.
 
-## Releases and Updates
+## Project Structure
 
-GitHub pushes update the source code only. Existing Android users do not automatically receive updates just because code is pushed to GitHub.
+```text
+app/src/main/java/com/jojinjohn/safepulse/   Android Java source
+app/src/main/res/                            UI resources and app icons
+app/src/main/assets/blocklist.txt            Bundled starter blocklist
+build-release.ps1                            Local release build helper
+keystore.properties.example                  Signing config template
+```
 
-SafePulse includes a free in-app update checker in the **About** tab. It reads the latest GitHub Release and opens the APK download when a newer release is available. Android still requires the user to approve the downloaded APK install.
+## Privacy
 
-For normal users, the GitHub Release or APK download must be public. Do not put a GitHub token inside the APK for private releases.
+SafePulse runs locally on the device. DNS statistics and logs are stored locally for the dashboard. The in-app updater contacts GitHub Releases only to check whether a newer APK exists.
 
-To update an installed APK:
+## Ownership
 
-1. Increase `versionCode` in `app/build.gradle`.
-2. Build a new signed release APK with the same release keystore.
-3. Upload the APK to a new GitHub Release.
-4. Users open **About > Check for updates > Update now**, then approve the APK install.
+SafePulse, its source code, UI, logo, name, APK, and release assets are proprietary work by Jojin John.
 
-Android accepts the update only when the package id stays `com.jojinjohn.safepulse`, the APK is signed with the same key, and `versionCode` is higher than the installed version.
-
-## Notes
-
-- The UI is responsive for Android phones, small screens, foldables, and tablets. Content is centered on large screens and the dashboard adapts its stats layout for tablet width.
-- DNS blocking works across apps that use normal system DNS.
-- The default DNS provider is AdGuard, and the app automatically merges multiple remote blocklists.
-- Allowlist, DNS provider, auto-update, boot start, module toggles, and per-app bypass controls are available in the Protection tab.
-- The DNS engine handles IPv4 DNS, IPv6 VPN DNS packets, larger UDP responses, and TCP fallback for truncated DNS answers.
-- It cannot guarantee ad-free YouTube in the official app. YouTube can serve ads and videos from the same Google video infrastructure, and blocking that infrastructure can stop videos too.
+This repository is public for transparency and release distribution, but it is **not open source**. See [LICENSE](LICENSE) for the full restrictions.
