@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -39,6 +40,15 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -82,6 +92,9 @@ public class MainActivity extends Activity {
     private static final int TAB_LOGS = 1;
     private static final int TAB_PROTECTION = 2;
     private static final int TAB_ABOUT = 3;
+    private static final String APP_VERSION_NAME = "1.1.0";
+    private static final long APP_VERSION_CODE = 2L;
+    private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.US);
@@ -124,6 +137,9 @@ public class MainActivity extends Activity {
     private LinearLayout[] navItems;
     private ImageView[] navIcons;
     private TextView[] navLabels;
+    private TextView updateStatusText;
+    private Button updateNowButton;
+    private ReleaseInfo latestRelease;
     private int currentTab = TAB_DASHBOARD;
     private boolean stoppedFromButton;
 
@@ -238,6 +254,8 @@ public class MainActivity extends Activity {
         blocklistUrlInput = null;
         recentBlocksList = null;
         toggleButton = null;
+        updateStatusText = null;
+        updateNowButton = null;
     }
 
     private LinearLayout buildBottomNav() {
@@ -803,6 +821,203 @@ public class MainActivity extends Activity {
         Button linkedin = smallButton("LinkedIn profile");
         linkedin.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.linkedin.com/in/jojin-john/"))));
         addTopMargin(about, linkedin, 12, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        LinearLayout updates = card(20, CARD_BG);
+        updates.setPadding(dp(18), dp(18), dp(18), dp(18));
+        addTopMargin(root, updates, 16);
+        updates.addView(sectionTitle("App updates", "Free GitHub Release updater"));
+
+        updateStatusText = text("Current version: " + currentVersionLabel(), 13, MUTED, false);
+        updateStatusText.setLineSpacing(dp(4), 1.0f);
+        addTopMargin(updates, updateStatusText, 12);
+
+        Button checkUpdates = smallButton("Check for updates");
+        checkUpdates.setOnClickListener(v -> checkForUpdates(checkUpdates, true));
+        addTopMargin(updates, checkUpdates, 12, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        updateNowButton = smallButton("Update now");
+        updateNowButton.setVisibility(View.GONE);
+        updateNowButton.setOnClickListener(v -> openLatestRelease());
+        addTopMargin(updates, updateNowButton, 10, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        TextView updateNote = text("Uses free GitHub Releases. For normal users, the APK release must be public; private releases require GitHub access and should never use a token inside the app.", 12, MUTED, false);
+        updateNote.setLineSpacing(dp(4), 1.0f);
+        addTopMargin(updates, updateNote, 12);
+
+        checkForUpdates(null, false);
+    }
+
+    private void checkForUpdates(Button button, boolean userRequested) {
+        if (updateStatusText != null) {
+            updateStatusText.setText("Checking GitHub Releases...\nInstalled: " + currentVersionLabel());
+        }
+        if (button != null) {
+            button.setEnabled(false);
+            button.setText("Checking...");
+        }
+
+        new Thread(() -> {
+            ReleaseInfo release = null;
+            String error = null;
+            try {
+                release = fetchLatestRelease();
+            } catch (Exception exception) {
+                error = exception.getMessage();
+            }
+
+            ReleaseInfo result = release;
+            String resultError = error;
+            handler.post(() -> applyUpdateResult(result, resultError, button, userRequested));
+        }).start();
+    }
+
+    private ReleaseInfo fetchLatestRelease() throws IOException {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(RELEASES_API_URL).openConnection();
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            connection.setRequestProperty("Accept", "application/vnd.github+json");
+            connection.setRequestProperty("User-Agent", "SafePulse/" + currentVersionName());
+
+            int status = connection.getResponseCode();
+            if (status == 401 || status == 403 || status == 404) {
+                throw new IOException("GitHub Release is private or unavailable");
+            }
+            if (status < 200 || status >= 300) {
+                throw new IOException("GitHub returned " + status);
+            }
+
+            JSONObject json = new JSONObject(readResponse(connection));
+            String tag = json.optString("tag_name", "");
+            String version = tag.startsWith("v") || tag.startsWith("V") ? tag.substring(1) : tag;
+            String releaseUrl = json.optString("html_url", "https://github.com/jojin1709/safeplus/releases");
+            String apkUrl = "";
+
+            JSONArray assets = json.optJSONArray("assets");
+            if (assets != null) {
+                for (int i = 0; i < assets.length(); i++) {
+                    JSONObject asset = assets.optJSONObject(i);
+                    if (asset == null) continue;
+                    String name = asset.optString("name", "").toLowerCase(Locale.US);
+                    if (name.endsWith(".apk")) {
+                        apkUrl = asset.optString("browser_download_url", "");
+                        break;
+                    }
+                }
+            }
+
+            return new ReleaseInfo(tag, version, releaseUrl, apkUrl);
+        } catch (IOException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IOException("Could not read release metadata", exception);
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private void applyUpdateResult(ReleaseInfo release, String error, Button button, boolean userRequested) {
+        if (button != null) {
+            button.setEnabled(true);
+            button.setText("Check for updates");
+        }
+        if (updateStatusText == null) return;
+
+        if (error != null && !error.isEmpty()) {
+            latestRelease = null;
+            updateStatusText.setText("Could not check updates.\n" + error + ".\nInstalled: " + currentVersionLabel());
+            if (updateNowButton != null) updateNowButton.setVisibility(View.GONE);
+            return;
+        }
+
+        latestRelease = release;
+        boolean hasNewerVersion = release != null && compareVersions(release.version, currentVersionName()) > 0;
+        if (hasNewerVersion) {
+            updateStatusText.setText("Update available: " + release.tag + "\nInstalled: " + currentVersionLabel());
+            if (updateNowButton != null) updateNowButton.setVisibility(View.VISIBLE);
+        } else {
+            String latest = release == null || release.tag.isEmpty() ? "unknown" : release.tag;
+            updateStatusText.setText("SafePulse is up to date.\nInstalled: " + currentVersionLabel() + "\nLatest release: " + latest);
+            if (updateNowButton != null) updateNowButton.setVisibility(View.GONE);
+        }
+    }
+
+    private void openLatestRelease() {
+        String target = "https://github.com/jojin1709/safeplus/releases";
+        if (latestRelease != null) {
+            target = latestRelease.apkUrl.isEmpty() ? latestRelease.releaseUrl : latestRelease.apkUrl;
+        }
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(target)));
+    }
+
+    private String currentVersionName() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.versionName == null || info.versionName.isEmpty() ? APP_VERSION_NAME : info.versionName;
+        } catch (PackageManager.NameNotFoundException exception) {
+            return APP_VERSION_NAME;
+        }
+    }
+
+    private long currentVersionCode() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return info.getLongVersionCode();
+            }
+            return info.versionCode;
+        } catch (PackageManager.NameNotFoundException exception) {
+            return APP_VERSION_CODE;
+        }
+    }
+
+    private String currentVersionLabel() {
+        return currentVersionName() + " (" + currentVersionCode() + ")";
+    }
+
+    private int compareVersions(String left, String right) {
+        int[] leftParts = versionParts(left);
+        int[] rightParts = versionParts(right);
+        int count = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < count; i++) {
+            int leftValue = i < leftParts.length ? leftParts[i] : 0;
+            int rightValue = i < rightParts.length ? rightParts[i] : 0;
+            if (leftValue != rightValue) return leftValue > rightValue ? 1 : -1;
+        }
+        return 0;
+    }
+
+    private int[] versionParts(String version) {
+        if (version == null) return new int[]{0, 0, 0};
+        String cleaned = version.replaceFirst("^[vV]", "");
+        String[] rawParts = cleaned.split("[^0-9]+");
+        int[] parts = new int[Math.max(3, rawParts.length)];
+        int index = 0;
+        for (String rawPart : rawParts) {
+            if (rawPart == null || rawPart.isEmpty()) continue;
+            try {
+                parts[index] = Integer.parseInt(rawPart);
+                index++;
+            } catch (NumberFormatException ignored) {
+                parts[index] = 0;
+                index++;
+            }
+            if (index >= parts.length) break;
+        }
+        return parts;
+    }
+
+    private String readResponse(HttpURLConnection connection) throws IOException {
+        InputStream stream = connection.getInputStream();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            return builder.toString();
+        }
     }
 
     private void toggleVpn(View view) {
@@ -1420,6 +1635,20 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_REQUEST_CODE);
         } else {
             renderState();
+        }
+    }
+
+    private static final class ReleaseInfo {
+        private final String tag;
+        private final String version;
+        private final String releaseUrl;
+        private final String apkUrl;
+
+        private ReleaseInfo(String tag, String version, String releaseUrl, String apkUrl) {
+            this.tag = tag == null ? "" : tag;
+            this.version = version == null ? "" : version;
+            this.releaseUrl = releaseUrl == null || releaseUrl.isEmpty() ? "https://github.com/jojin1709/safeplus/releases" : releaseUrl;
+            this.apkUrl = apkUrl == null ? "" : apkUrl;
         }
     }
 }

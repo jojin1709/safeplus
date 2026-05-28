@@ -36,12 +36,16 @@ Do not commit `keystore.properties` or any `.jks` file. They are ignored because
 
 GitHub pushes update the source code only. Existing Android users do not automatically receive updates just because code is pushed to GitHub.
 
+SafePulse includes a free in-app update checker in the **About** tab. It reads the latest GitHub Release and opens the APK download when a newer release is available. Android still requires the user to approve the downloaded APK install.
+
+For normal users, the GitHub Release or APK download must be public. Do not put a GitHub token inside the APK for private releases.
+
 To update an installed APK:
 
 1. Increase `versionCode` in `app/build.gradle`.
 2. Build a new signed release APK with the same release keystore.
 3. Upload the APK to a new GitHub Release.
-4. Users download and install the new APK, or the app needs a future in-app updater / Play Store distribution.
+4. Users open **About > Check for updates > Update now**, then approve the APK install.
 
 Android accepts the update only when the package id stays `com.jojinjohn.safepulse`, the APK is signed with the same key, and `versionCode` is higher than the installed version.
 
