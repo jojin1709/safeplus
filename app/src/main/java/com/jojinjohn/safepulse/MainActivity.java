@@ -93,8 +93,8 @@ public class MainActivity extends Activity {
     private static final int TAB_LOGS = 1;
     private static final int TAB_PROTECTION = 2;
     private static final int TAB_ABOUT = 3;
-    private static final String APP_VERSION_NAME = "1.2.0";
-    private static final long APP_VERSION_CODE = 3L;
+    private static final String APP_VERSION_NAME = "1.2.1";
+    private static final long APP_VERSION_CODE = 4L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -854,7 +854,7 @@ public class MainActivity extends Activity {
         updateNowButton.setOnClickListener(v -> openLatestRelease());
         addTopMargin(updates, updateNowButton, 10, new LinearLayout.LayoutParams(-1, dp(48)));
 
-        TextView updateNote = text("Uses free GitHub Releases. For normal users, the APK release must be public; private releases require GitHub access and should never use a token inside the app.", 12, MUTED, false);
+        TextView updateNote = text("Uses free GitHub Releases. SafePulse picks a compatible APK for this device, or a universal APK, so phone, tablet, TV, and Fire TV updates do not conflict.", 12, MUTED, false);
         updateNote.setLineSpacing(dp(4), 1.0f);
         addTopMargin(updates, updateNote, 12);
 
@@ -906,22 +906,28 @@ public class MainActivity extends Activity {
             String tag = json.optString("tag_name", "");
             String version = tag.startsWith("v") || tag.startsWith("V") ? tag.substring(1) : tag;
             String releaseUrl = json.optString("html_url", "https://github.com/jojin1709/safeplus/releases");
-            String apkUrl = "";
+            ReleaseAsset bestAsset = null;
 
             JSONArray assets = json.optJSONArray("assets");
             if (assets != null) {
                 for (int i = 0; i < assets.length(); i++) {
                     JSONObject asset = assets.optJSONObject(i);
                     if (asset == null) continue;
-                    String name = asset.optString("name", "").toLowerCase(Locale.US);
-                    if (name.endsWith(".apk")) {
-                        apkUrl = asset.optString("browser_download_url", "");
-                        break;
-                    }
+                    ReleaseAsset candidate = releaseAsset(asset);
+                    if (candidate == null || candidate.score < 0) continue;
+                    if (bestAsset == null || candidate.score > bestAsset.score) bestAsset = candidate;
                 }
             }
 
-            return new ReleaseInfo(tag, version, releaseUrl, apkUrl);
+            return new ReleaseInfo(
+                    tag,
+                    version,
+                    releaseUrl,
+                    bestAsset == null ? "" : bestAsset.url,
+                    bestAsset == null ? "" : bestAsset.name,
+                    bestAsset != null,
+                    currentDeviceLabel()
+            );
         } catch (IOException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -948,13 +954,50 @@ public class MainActivity extends Activity {
         latestRelease = release;
         boolean hasNewerVersion = release != null && compareVersions(release.version, currentVersionName()) > 0;
         if (hasNewerVersion) {
-            updateStatusText.setText("Update available: " + release.tag + "\nInstalled: " + currentVersionLabel());
-            if (updateNowButton != null) updateNowButton.setVisibility(View.VISIBLE);
+            String assetLine = release.compatibleAsset
+                    ? "\nAPK: " + release.assetName
+                    : "\nNo compatible APK asset found for " + release.deviceLabel + ".";
+            updateStatusText.setText("Update available: " + release.tag + "\nInstalled: " + currentVersionLabel() + assetLine);
+            if (updateNowButton != null) {
+                updateNowButton.setText(release.compatibleAsset ? "Update now" : "View release");
+                updateNowButton.setVisibility(View.VISIBLE);
+            }
         } else {
             String latest = release == null || release.tag.isEmpty() ? "unknown" : release.tag;
-            updateStatusText.setText("SafePulse is up to date.\nInstalled: " + currentVersionLabel() + "\nLatest release: " + latest);
+            String assetLine = release != null && release.compatibleAsset ? "\nAPK channel: " + release.assetName : "";
+            updateStatusText.setText("SafePulse is up to date.\nInstalled: " + currentVersionLabel() + "\nLatest release: " + latest + assetLine);
             if (updateNowButton != null) updateNowButton.setVisibility(View.GONE);
         }
+    }
+
+    private ReleaseAsset releaseAsset(JSONObject asset) {
+        String originalName = asset.optString("name", "");
+        String name = originalName.toLowerCase(Locale.US);
+        String url = asset.optString("browser_download_url", "");
+        if (!name.endsWith(".apk") || url.isEmpty()) return null;
+        return new ReleaseAsset(originalName, url, updateAssetScore(name));
+    }
+
+    private int updateAssetScore(String name) {
+        boolean tvName = name.contains("tv") || name.contains("fire") || name.contains("leanback");
+        boolean mobileName = name.contains("phone") || name.contains("mobile") || name.contains("tablet");
+        boolean universalName = name.contains("universal") || name.contains("all") || name.matches(".*safepulse-v?\\d.*\\.apk");
+
+        if (isTvLayout()) {
+            if (tvName) return 100;
+            if (universalName) return 70;
+            if (mobileName) return -1;
+            return 40;
+        }
+
+        if (mobileName) return 100;
+        if (universalName) return 70;
+        if (tvName) return -1;
+        return 40;
+    }
+
+    private String currentDeviceLabel() {
+        return isTvLayout() ? "Android TV / Fire TV" : "Android phone / tablet";
     }
 
     private void openLatestRelease() {
@@ -1685,12 +1728,30 @@ public class MainActivity extends Activity {
         private final String version;
         private final String releaseUrl;
         private final String apkUrl;
+        private final String assetName;
+        private final boolean compatibleAsset;
+        private final String deviceLabel;
 
-        private ReleaseInfo(String tag, String version, String releaseUrl, String apkUrl) {
+        private ReleaseInfo(String tag, String version, String releaseUrl, String apkUrl, String assetName, boolean compatibleAsset, String deviceLabel) {
             this.tag = tag == null ? "" : tag;
             this.version = version == null ? "" : version;
             this.releaseUrl = releaseUrl == null || releaseUrl.isEmpty() ? "https://github.com/jojin1709/safeplus/releases" : releaseUrl;
             this.apkUrl = apkUrl == null ? "" : apkUrl;
+            this.assetName = assetName == null || assetName.isEmpty() ? "release page" : assetName;
+            this.compatibleAsset = compatibleAsset;
+            this.deviceLabel = deviceLabel == null ? "this device" : deviceLabel;
+        }
+    }
+
+    private static final class ReleaseAsset {
+        private final String name;
+        private final String url;
+        private final int score;
+
+        private ReleaseAsset(String name, String url, int score) {
+            this.name = name;
+            this.url = url;
+            this.score = score;
         }
     }
 }

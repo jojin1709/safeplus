@@ -57,12 +57,19 @@ https://api.github.com/repos/jojin1709/safeplus/releases/latest
 
 When a newer release is available, the app shows **Update now** and opens the APK download. Android still requires the user to approve the installation.
 
+SafePulse uses a device-aware update picker:
+
+- Phone and tablet builds should use `phone`, `mobile`, `tablet`, or `universal` in the APK file name.
+- Android TV and Fire TV builds should use `tv`, `fire`, `leanback`, or `universal` in the APK file name.
+- A universal APK can update every supported device when one APK is intended for all devices.
+- Phone/tablet devices will not auto-pick a TV-only APK, and TV/Fire TV devices will not auto-pick a mobile-only APK.
+
 For updates to work:
 
 1. Keep the package id as `com.jojinjohn.safepulse`.
 2. Increase `versionCode` in `app/build.gradle`.
 3. Build the APK with the same release signing key.
-4. Publish the APK in a new GitHub Release.
+4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.2.1.apk`.
 
 ## Build
 
