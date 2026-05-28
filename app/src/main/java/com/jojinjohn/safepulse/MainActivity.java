@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -92,8 +93,8 @@ public class MainActivity extends Activity {
     private static final int TAB_LOGS = 1;
     private static final int TAB_PROTECTION = 2;
     private static final int TAB_ABOUT = 3;
-    private static final String APP_VERSION_NAME = "1.1.0";
-    private static final long APP_VERSION_CODE = 2L;
+    private static final String APP_VERSION_NAME = "1.2.0";
+    private static final long APP_VERSION_CODE = 3L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -178,20 +179,24 @@ public class MainActivity extends Activity {
         contentRoot = new LinearLayout(this);
         contentRoot.setOrientation(LinearLayout.VERTICAL);
         int horizontalPadding = contentHorizontalPadding();
-        contentRoot.setPadding(horizontalPadding, dp(18), horizontalPadding, dp(22));
+        contentRoot.setPadding(horizontalPadding, dp(isTvLayout() ? 28 : 18), horizontalPadding, dp(isTvLayout() ? 34 : 22));
         contentRoot.setFocusableInTouchMode(true);
         FrameLayout.LayoutParams contentParams = new FrameLayout.LayoutParams(contentWidth(), -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         scrollContent.addView(contentRoot, contentParams);
         scrollView.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         shell.addView(scrollView, new FrameLayout.LayoutParams(-1, -1));
 
-        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(navWidth(), dp(isTabletLayout() ? 82 : 76), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        navParams.bottomMargin = dp(14);
+        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(navWidth(), dp(isTvLayout() ? 94 : isTabletLayout() ? 82 : 76), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        navParams.bottomMargin = dp(isTvLayout() ? 22 : 14);
         shell.addView(buildBottomNav(), navParams);
 
         setContentView(shell);
         showTab(currentTab);
-        contentRoot.requestFocus();
+        if (isTvLayout() && toggleButton != null) {
+            toggleButton.requestFocus();
+        } else {
+            contentRoot.requestFocus();
+        }
         renderState();
         renderSettingsState();
     }
@@ -262,9 +267,9 @@ public class MainActivity extends Activity {
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(8), dp(7), dp(8), dp(7));
+        nav.setPadding(dp(isTvLayout() ? 12 : 8), dp(isTvLayout() ? 10 : 7), dp(isTvLayout() ? 12 : 8), dp(isTvLayout() ? 10 : 7));
         nav.setBackground(roundStroke(CARD_BG, BORDER, 28));
-        nav.setElevation(dp(8));
+        nav.setElevation(dp(isTvLayout() ? 12 : 8));
 
         navItems = new LinearLayout[]{
                 navItem("Dashboard", TAB_DASHBOARD, R.drawable.ic_nav_home),
@@ -287,12 +292,14 @@ public class MainActivity extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setPadding(dp(4), dp(5), dp(4), dp(4));
         item.setClickable(true);
+        item.setFocusable(true);
         item.setContentDescription(label);
         item.setOnClickListener(v -> showTab(tab));
+        applyTvFocus(item);
 
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
-        item.addView(icon, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        item.addView(icon, new LinearLayout.LayoutParams(dp(isTvLayout() ? 24 : 20), dp(isTvLayout() ? 24 : 20)));
 
         TextView title = text(label, 10, MUTED, false);
         title.setGravity(Gravity.CENTER);
@@ -339,8 +346,10 @@ public class MainActivity extends Activity {
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.safepulse_logo);
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        logoShell.addView(logo, new FrameLayout.LayoutParams(dp(46), dp(46), Gravity.CENTER));
-        header.addView(logoShell, new LinearLayout.LayoutParams(dp(54), dp(54)));
+        int logoInner = isTvLayout() ? 56 : 46;
+        int logoOuter = isTvLayout() ? 66 : 54;
+        logoShell.addView(logo, new FrameLayout.LayoutParams(dp(logoInner), dp(logoInner), Gravity.CENTER));
+        header.addView(logoShell, new LinearLayout.LayoutParams(dp(logoOuter), dp(logoOuter)));
 
         LinearLayout titleColumn = new LinearLayout(this);
         titleColumn.setOrientation(LinearLayout.VERTICAL);
@@ -364,7 +373,7 @@ public class MainActivity extends Activity {
         );
         themeToggle.setContentDescription(isDarkMode() ? "Switch to light mode" : "Switch to dark mode");
         themeToggle.setOnClickListener(v -> toggleTheme());
-        actions.addView(themeToggle, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        actions.addView(themeToggle, new LinearLayout.LayoutParams(dp(isTvLayout() ? 50 : 42), dp(isTvLayout() ? 50 : 42)));
 
         statusPill = text("ACTIVE", 11, SUCCESS, true);
         statusPill.setGravity(Gravity.CENTER);
@@ -452,7 +461,7 @@ public class MainActivity extends Activity {
         controls.setGravity(Gravity.CENTER_VERTICAL);
         controls.addView(status, new LinearLayout.LayoutParams(-2, -2));
         controls.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
-        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(dp(96), dp(40));
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(dp(isTvLayout() ? 128 : 96), dp(isTvLayout() ? 48 : 40));
         buttonParams.leftMargin = dp(10);
         controls.addView(action, buttonParams);
         addTopMargin(item, controls, 10);
@@ -521,7 +530,8 @@ public class MainActivity extends Activity {
         toggleButton.setTypeface(typeface(true));
         toggleButton.setPadding(dp(12), 0, dp(12), 0);
         toggleButton.setOnClickListener(this::toggleVpn);
-        addTopMargin(hero, toggleButton, 16, new LinearLayout.LayoutParams(-1, dp(54)));
+        applyTvFocus(toggleButton);
+        addTopMargin(hero, toggleButton, 16, new LinearLayout.LayoutParams(-1, dp(isTvLayout() ? 64 : 54)));
     }
 
     private void buildStatsGrid(LinearLayout root) {
@@ -594,6 +604,7 @@ public class MainActivity extends Activity {
         logFilterInput.setHintTextColor(color(MUTED));
         logFilterInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         logFilterInput.setPadding(dp(14), 0, dp(14), 0);
+        applyTvFocus(logFilterInput);
         logFilterInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -702,6 +713,7 @@ public class MainActivity extends Activity {
         dnsSpinner.setSelection(Math.max(0, selectedDns));
         dnsSpinner.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         dnsSpinner.setPadding(dp(12), 0, dp(12), 0);
+        applyTvFocus(dnsSpinner);
         dnsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -734,6 +746,7 @@ public class MainActivity extends Activity {
         allowDomainInput.setHintTextColor(color(MUTED));
         allowDomainInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         allowDomainInput.setPadding(dp(14), 0, dp(14), 0);
+        applyTvFocus(allowDomainInput);
         addTopMargin(settings, allowDomainInput, 8, new LinearLayout.LayoutParams(-1, dp(50)));
 
         LinearLayout allowButtons = row();
@@ -774,6 +787,7 @@ public class MainActivity extends Activity {
         blocklistUrlInput.setHintTextColor(color(MUTED));
         blocklistUrlInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         blocklistUrlInput.setPadding(dp(14), dp(12), dp(14), dp(12));
+        applyTvFocus(blocklistUrlInput);
         addTopMargin(settings, blocklistUrlInput, 8, new LinearLayout.LayoutParams(-1, dp(116)));
 
         Button updateBlocklists = smallButton("Update blocklists now");
@@ -1406,11 +1420,13 @@ public class MainActivity extends Activity {
         CheckBox box = new CheckBox(this);
         box.setText(label);
         box.setTextColor(color(INK));
-        box.setTextSize(14);
+        box.setTextSize(textSizeForDevice(14));
         box.setTypeface(typeface(false));
-        box.setMinHeight(dp(50));
+        box.setMinHeight(dp(isTvLayout() ? 58 : 50));
         box.setPadding(dp(12), 0, dp(12), 0);
         box.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
+        box.setFocusable(true);
+        applyTvFocus(box);
         if (Build.VERSION.SDK_INT >= 21) {
             box.setButtonTintList(ColorStateList.valueOf(color(PRIMARY)));
         }
@@ -1421,10 +1437,13 @@ public class MainActivity extends Activity {
         Button button = new Button(this);
         button.setAllCaps(false);
         button.setText(label);
-        button.setTextSize(14);
+        button.setTextSize(textSizeForDevice(14));
         button.setTextColor(color(INK));
         button.setTypeface(typeface(true));
         button.setBackground(ripple(roundStroke(CARD_BG, BORDER, 16)));
+        button.setFocusable(true);
+        button.setMinHeight(dp(isTvLayout() ? 54 : 46));
+        applyTvFocus(button);
         return button;
     }
 
@@ -1445,7 +1464,7 @@ public class MainActivity extends Activity {
     private TextView text(String value, int sp, int color, boolean bold) {
         TextView textView = new TextView(this);
         textView.setText(value);
-        textView.setTextSize(sp);
+        textView.setTextSize(textSizeForDevice(sp));
         textView.setTextColor(color(color));
         textView.setTypeface(typeface(bold));
         return textView;
@@ -1468,10 +1487,11 @@ public class MainActivity extends Activity {
         frame.setBackground(ripple(roundRect(bgColor, 14)));
         frame.setClickable(true);
         frame.setFocusable(true);
+        applyTvFocus(frame);
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
         icon.setColorFilter(color(iconTint));
-        frame.addView(icon, new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER));
+        frame.addView(icon, new FrameLayout.LayoutParams(dp(isTvLayout() ? 22 : 18), dp(isTvLayout() ? 22 : 18), Gravity.CENTER));
         return frame;
     }
 
@@ -1501,6 +1521,22 @@ public class MainActivity extends Activity {
 
     private Typeface typeface(boolean bold) {
         return Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL);
+    }
+
+    private int textSizeForDevice(int sp) {
+        if (!isTvLayout()) return sp;
+        if (sp >= 24) return sp + 3;
+        if (sp >= 14) return sp + 2;
+        return sp + 1;
+    }
+
+    private void applyTvFocus(View view) {
+        if (!isTvLayout()) return;
+        view.setOnFocusChangeListener((v, hasFocus) -> {
+            float scale = hasFocus ? 1.04f : 1.0f;
+            v.animate().scaleX(scale).scaleY(scale).setDuration(120L).start();
+            v.setTranslationZ(hasFocus ? dp(8) : 0);
+        });
     }
 
     private boolean isDarkMode() {
@@ -1595,25 +1631,31 @@ public class MainActivity extends Activity {
         return getResources().getConfiguration().screenWidthDp >= TABLET_WIDTH_DP;
     }
 
+    private boolean isTvLayout() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION;
+    }
+
     private int contentWidth() {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        int sideGutter = isTabletLayout() ? dp(48) : 0;
+        int sideGutter = isTvLayout() ? dp(160) : isTabletLayout() ? dp(48) : 0;
+        int maxWidth = isTvLayout() ? dp(1120) : dp(MAX_CONTENT_WIDTH_DP);
         int availableWidth = Math.max(dp(280), screenWidth - sideGutter);
-        return Math.min(screenWidth, Math.min(availableWidth, dp(MAX_CONTENT_WIDTH_DP)));
+        return Math.min(screenWidth, Math.min(availableWidth, maxWidth));
     }
 
     private int navWidth() {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        int availableWidth = Math.max(dp(220), screenWidth - dp(32));
-        return Math.min(screenWidth, Math.min(availableWidth, dp(MAX_NAV_WIDTH_DP)));
+        int availableWidth = Math.max(dp(220), screenWidth - dp(isTvLayout() ? 180 : 32));
+        int maxWidth = isTvLayout() ? dp(820) : dp(MAX_NAV_WIDTH_DP);
+        return Math.min(screenWidth, Math.min(availableWidth, maxWidth));
     }
 
     private int contentHorizontalPadding() {
-        return dp(isTabletLayout() ? 24 : 20);
+        return dp(isTvLayout() ? 30 : isTabletLayout() ? 24 : 20);
     }
 
     private int bottomScrollPadding() {
-        return dp(isTabletLayout() ? 114 : 104);
+        return dp(isTvLayout() ? 138 : isTabletLayout() ? 114 : 104);
     }
 
     private void styleSystemBars() {

@@ -25,7 +25,8 @@ Android may ask for permission to install apps from the browser or file manager.
 - Live blocked/checked/allowed counters
 - Recent blocked domain list and searchable logs
 - Light and dark mode
-- Responsive UI for phones, foldables, and tablets
+- Responsive UI for phones, foldables, tablets, Android TV, and Fire TV
+- Android TV / Fire TV launcher support with a remote-friendly interface
 - Free in-app update checker using GitHub Releases
 
 ## Important Limits
@@ -36,6 +37,13 @@ SafePulse is a DNS/VPN-style blocker. It can block domain lookups, but it cannot
 - It cannot guarantee official YouTube app ad blocking because YouTube can serve ads and videos from shared Google video infrastructure.
 - Apps using Private DNS, DoH, DoT, hardcoded DNS, or their own encrypted network stack may bypass DNS filtering.
 - Blocking too aggressively can break videos, logins, payments, or app loading, so SafePulse keeps playback-critical hosts safer by default.
+- Streaming apps on Fire TV may still show ads when ads and video streams come from the same service infrastructure.
+
+## Fire TV / Android TV
+
+SafePulse includes Android TV launcher support, a TV banner, larger controls, and D-pad focus behavior for remotes. The same APK can be sideloaded onto compatible Android TV and Amazon Fire TV devices.
+
+On Fire TV, install the APK from the latest GitHub Release, approve unknown-app installation if needed, then open SafePulse from the apps screen. The first start still requires Android's VPN permission so SafePulse can filter DNS requests locally.
 
 ## Updates
 
