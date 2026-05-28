@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.1
+
+- Simplified the app navigation labels for normal users.
+- Renamed technical settings into plain language.
+- Moved DNS provider, app bypass, allowlist, and block rule source editing behind Advanced options.
+- Simplified diagnostic and test wording.
+
 ## v1.3.0
 
 - Added Checks tab with diagnostics for VPN, DNS, blocklists, Private DNS, battery, notifications, and device mode.

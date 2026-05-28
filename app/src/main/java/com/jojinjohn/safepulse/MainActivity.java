@@ -95,8 +95,8 @@ public class MainActivity extends Activity {
     private static final int TAB_DIAGNOSTICS = 3;
     private static final int TAB_ABOUT = 4;
     private static final int TAB_COUNT = 5;
-    private static final String APP_VERSION_NAME = "1.3.0";
-    private static final long APP_VERSION_CODE = 5L;
+    private static final String APP_VERSION_NAME = "1.3.1";
+    private static final long APP_VERSION_CODE = 6L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -147,6 +147,7 @@ public class MainActivity extends Activity {
     private ReleaseInfo latestRelease;
     private int currentTab = TAB_DASHBOARD;
     private boolean stoppedFromButton;
+    private boolean showAdvancedSettings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -211,7 +212,7 @@ public class MainActivity extends Activity {
         contentRoot.removeAllViews();
 
         if (tab == TAB_DASHBOARD) {
-            buildHeader(contentRoot, "Protection dashboard");
+            buildHeader(contentRoot, "Home");
             if (needsSetupAttention()) {
                 buildSetupChecklist(contentRoot);
             }
@@ -220,16 +221,16 @@ public class MainActivity extends Activity {
             buildLiveDetails(contentRoot);
             buildRecentBlocks(contentRoot);
         } else if (tab == TAB_LOGS) {
-            buildHeader(contentRoot, "Blocked requests and history");
+            buildHeader(contentRoot, "Activity");
             buildLogs(contentRoot);
         } else if (tab == TAB_PROTECTION) {
-            buildHeader(contentRoot, "Protection modules");
+            buildHeader(contentRoot, "Settings");
             buildSettings(contentRoot);
         } else if (tab == TAB_DIAGNOSTICS) {
-            buildHeader(contentRoot, "Diagnostics and tests");
+            buildHeader(contentRoot, "Quick check");
             buildDiagnostics(contentRoot);
         } else {
-            buildHeader(contentRoot, "App details");
+            buildHeader(contentRoot, "Help");
             buildAbout(contentRoot);
         }
 
@@ -281,11 +282,11 @@ public class MainActivity extends Activity {
         nav.setElevation(dp(isTvLayout() ? 12 : 8));
 
         navItems = new LinearLayout[]{
-                navItem("Dashboard", TAB_DASHBOARD, R.drawable.ic_nav_home),
-                navItem("Logs", TAB_LOGS, R.drawable.ic_nav_activity),
-                navItem("Protect", TAB_PROTECTION, R.drawable.ic_nav_shield),
-                navItem("Checks", TAB_DIAGNOSTICS, R.drawable.ic_stat_check),
-                navItem("About", TAB_ABOUT, R.drawable.ic_nav_info)
+                navItem("Home", TAB_DASHBOARD, R.drawable.ic_nav_home),
+                navItem("Activity", TAB_LOGS, R.drawable.ic_nav_activity),
+                navItem("Settings", TAB_PROTECTION, R.drawable.ic_nav_shield),
+                navItem("Check", TAB_DIAGNOSTICS, R.drawable.ic_stat_check),
+                navItem("Help", TAB_ABOUT, R.drawable.ic_nav_info)
         };
         for (LinearLayout item : navItems) {
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1);
@@ -401,8 +402,8 @@ public class MainActivity extends Activity {
         LinearLayout setup = card(20, CARD_BG);
         setup.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, setup, 16);
-        setup.addView(sectionTitle("Setup checklist", "Allow these for reliable protection"));
-        TextView intro = text("Complete the required VPN permission first. Battery, notification, and Private DNS checks help SafePulse keep working in the background after setup.", 13, MUTED, false);
+        setup.addView(sectionTitle("Finish setup", "One-time permissions"));
+        TextView intro = text("Allow these so SafePulse can protect your device and keep running reliably.", 13, MUTED, false);
         intro.setLineSpacing(dp(2), 1.0f);
         addTopMargin(setup, intro, 10);
 
@@ -411,7 +412,7 @@ public class MainActivity extends Activity {
         vpnSetupButton.setOnClickListener(v -> requestVpnSetupPermission());
         addTopMargin(setup, setupRow(
                 "VPN permission",
-                "Required so SafePulse can filter DNS requests locally.",
+                "Needed so SafePulse can block unwanted domains.",
                 vpnSetupStatusText,
                 vpnSetupButton
         ), 14);
@@ -421,7 +422,7 @@ public class MainActivity extends Activity {
         batterySetupButton.setOnClickListener(v -> openBatterySettings());
         addTopMargin(setup, setupRow(
                 "Battery optimization",
-                "Recommended so Android does not stop background protection.",
+                "Helps SafePulse stay on in the background.",
                 batterySetupStatusText,
                 batterySetupButton
         ), 8);
@@ -431,7 +432,7 @@ public class MainActivity extends Activity {
         notificationSetupButton.setOnClickListener(v -> requestNotificationPermission());
         addTopMargin(setup, setupRow(
                 "Notifications",
-                "Recommended for the running protection status and quick stop action.",
+                "Shows protection status and quick stop.",
                 notificationSetupStatusText,
                 notificationSetupButton
         ), 8);
@@ -441,7 +442,7 @@ public class MainActivity extends Activity {
         privateDnsSetupButton.setOnClickListener(v -> openPrivateDnsSettings());
         addTopMargin(setup, setupRow(
                 "Private DNS",
-                "Turn off phone-level Private DNS if apps bypass SafePulse.",
+                "Turn this off if apps bypass blocking.",
                 privateDnsSetupStatusText,
                 privateDnsSetupButton
         ), 8);
@@ -504,7 +505,7 @@ public class MainActivity extends Activity {
         heroTop.setOrientation(LinearLayout.HORIZONTAL);
         heroTop.setGravity(Gravity.CENTER_VERTICAL);
         heroTop.addView(iconBadge(R.drawable.ic_nav_shield, 0x33FFFFFF, Color.WHITE, 40, 20));
-        TextView label = text("PROTECTION STATUS", 11, 0xFFE0E7FF, true);
+        TextView label = text("PROTECTION", 11, 0xFFE0E7FF, true);
         label.setLetterSpacing(0.04f);
         LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(0, -2, 1);
         labelParams.leftMargin = dp(10);
@@ -515,7 +516,7 @@ public class MainActivity extends Activity {
         statusText.setIncludeFontPadding(false);
         addTopMargin(hero, statusText, 18);
 
-        TextView heroCopy = text("DNS-level blocking for apps and browsers after you start protection. YouTube is handled video-safe, so playback is not broken.", 13, 0xFFEDE9FE, false);
+        TextView heroCopy = text("Tap Start to block ads, trackers, popups, and risky redirects across supported apps and browsers.", 13, 0xFFEDE9FE, false);
         heroCopy.setLineSpacing(dp(2), 1.0f);
         addTopMargin(hero, heroCopy, 8);
 
@@ -575,7 +576,7 @@ public class MainActivity extends Activity {
         details.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, details, 16);
 
-        details.addView(sectionTitle("Live activity", "Real-time protection"));
+        details.addView(sectionTitle("Live status", "What SafePulse is doing"));
         LinearLayout statusRow = new LinearLayout(this);
         statusRow.setOrientation(LinearLayout.HORIZONTAL);
         statusRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -585,7 +586,7 @@ public class MainActivity extends Activity {
         uptimeParams.leftMargin = dp(10);
         statusRow.addView(uptimeText, uptimeParams);
         addTopMargin(details, statusRow, 14);
-        TextView copy = text("SafePulse blocks known ad, tracker, consent, redirect, and encrypted-DNS domains. It does not fake counts, and it avoids blocking shared YouTube video hosts that would break playback.", 13, MUTED, false);
+        TextView copy = text("Counts update only from real requests. Some YouTube and streaming ads may still appear when ads use the same servers as videos.", 13, MUTED, false);
         copy.setLineSpacing(dp(2), 1.0f);
         addTopMargin(details, copy, 8);
     }
@@ -594,7 +595,7 @@ public class MainActivity extends Activity {
         LinearLayout recent = card(20, CARD_BG);
         recent.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, recent, 16);
-        recent.addView(sectionTitle("Recent blocks", "Latest domains"));
+        recent.addView(sectionTitle("Recent blocks", "Latest blocked items"));
         recentBlocksList = new LinearLayout(this);
         recentBlocksList.setOrientation(LinearLayout.VERTICAL);
         addTopMargin(recent, recentBlocksList, 12);
@@ -604,7 +605,7 @@ public class MainActivity extends Activity {
         LinearLayout logs = card(20, CARD_BG);
         logs.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, logs, 16);
-        logs.addView(sectionTitle("Detailed logs", "Search blocked requests"));
+        logs.addView(sectionTitle("Activity", "Search blocked items"));
 
         logFilterInput = new EditText(this);
         logFilterInput.setSingleLine(true);
@@ -624,7 +625,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(logs, logFilterInput, 14, new LinearLayout.LayoutParams(-1, dp(50)));
 
-        logsText = text("No log entries yet.", 13, MUTED, false);
+        logsText = text("No activity yet.", 13, MUTED, false);
         logsText.setLineSpacing(dp(5), 1.0f);
         logsText.setBackground(roundRect(0xFFF8FAFC, 16));
         logsText.setPadding(dp(14), dp(12), dp(14), dp(12));
@@ -635,12 +636,12 @@ public class MainActivity extends Activity {
         LinearLayout settings = card(20, CARD_BG);
         settings.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, settings, 16);
-        settings.addView(sectionTitle("Protection modules", "Automatic controls"));
-        TextView guidance = text("Default modules stay on. Turn one off only if it breaks an app or site.", 13, MUTED, false);
+        settings.addView(sectionTitle("Settings", "Simple controls"));
+        TextView guidance = text("Recommended protection is already turned on. Change these only if something stops working.", 13, MUTED, false);
         guidance.setLineSpacing(dp(2), 1.0f);
         addTopMargin(settings, guidance, 12);
 
-        CheckBox aggressiveBlocking = checkBox("Aggressive ad blocking");
+        CheckBox aggressiveBlocking = checkBox("Block ads");
         aggressiveBlocking.setChecked(AppSettings.isAggressiveBlockingEnabled(this));
         aggressiveBlocking.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setAggressiveBlockingEnabled(this, checked);
@@ -648,7 +649,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, aggressiveBlocking, 12);
 
-        CheckBox dohGuard = checkBox("Encrypted DNS guard");
+        CheckBox dohGuard = checkBox("Stop apps bypassing SafePulse");
         dohGuard.setChecked(AppSettings.isDohGuardEnabled(this));
         dohGuard.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setDohGuardEnabled(this, checked);
@@ -656,7 +657,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, dohGuard, 8);
 
-        CheckBox antiTracking = checkBox("Anti-tracking");
+        CheckBox antiTracking = checkBox("Block trackers");
         antiTracking.setChecked(AppSettings.isAntiTrackingEnabled(this));
         antiTracking.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setAntiTrackingEnabled(this, checked);
@@ -664,7 +665,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, antiTracking, 12);
 
-        CheckBox neverConsent = checkBox("Never-consent");
+        CheckBox neverConsent = checkBox("Block cookie popups");
         neverConsent.setChecked(AppSettings.isNeverConsentEnabled(this));
         neverConsent.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setNeverConsentEnabled(this, checked);
@@ -672,7 +673,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, neverConsent, 8);
 
-        CheckBox redirectProtection = checkBox("Redirect protection");
+        CheckBox redirectProtection = checkBox("Block risky redirects");
         redirectProtection.setChecked(AppSettings.isRedirectProtectionEnabled(this));
         redirectProtection.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setRedirectProtectionEnabled(this, checked);
@@ -680,7 +681,7 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, redirectProtection, 8);
 
-        CheckBox autoUpdate = checkBox("Auto-update blocklists");
+        CheckBox autoUpdate = checkBox("Keep block rules updated");
         autoUpdate.setChecked(AppSettings.isAutoUpdateEnabled(this));
         autoUpdate.setOnCheckedChangeListener((buttonView, checked) -> {
             AppSettings.setAutoUpdateEnabled(this, checked);
@@ -696,8 +697,21 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, bootStart, 8);
 
+        Button advancedToggle = smallButton(showAdvancedSettings ? "Hide advanced options" : "Show advanced options");
+        advancedToggle.setOnClickListener(v -> {
+            showAdvancedSettings = !showAdvancedSettings;
+            showTab(TAB_PROTECTION);
+        });
+        addTopMargin(settings, advancedToggle, 16, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        LinearLayout advanced = card(18, 0xFFF8FAFC);
+        advanced.setPadding(dp(14), dp(14), dp(14), dp(14));
+        advanced.setVisibility(showAdvancedSettings ? View.VISIBLE : View.GONE);
+        addTopMargin(settings, advanced, 12);
+        advanced.addView(sectionTitle("Advanced options", "Only change these if you know why"));
+
         TextView dnsLabel = text("DNS provider", 14, INK, true);
-        addTopMargin(settings, dnsLabel, 16);
+        addTopMargin(advanced, dnsLabel, 16);
         Spinner dnsSpinner = new Spinner(this);
         ArrayAdapter<String> dnsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, AppSettings.dnsProviders()) {
             @Override
@@ -735,19 +749,19 @@ public class MainActivity extends Activity {
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
-        addTopMargin(settings, dnsSpinner, 8, new LinearLayout.LayoutParams(-1, dp(50)));
+        addTopMargin(advanced, dnsSpinner, 8, new LinearLayout.LayoutParams(-1, dp(50)));
 
-        TextView bypassTitle = text("Per-app bypass", 14, INK, true);
-        addTopMargin(settings, bypassTitle, 16);
-        TextView bypassNote = text("Checked apps skip SafePulse after protection is restarted.", 12, MUTED, false);
-        addTopMargin(settings, bypassNote, 5);
-        addBypassCheck(settings, "Bypass YouTube", "com.google.android.youtube");
-        addBypassCheck(settings, "Bypass Chrome", "com.android.chrome");
-        addBypassCheck(settings, "Bypass Instagram", "com.instagram.android");
-        addBypassCheck(settings, "Bypass Facebook", "com.facebook.katana");
+        TextView bypassTitle = text("App bypass", 14, INK, true);
+        addTopMargin(advanced, bypassTitle, 16);
+        TextView bypassNote = text("Checked apps will skip SafePulse after protection is restarted.", 12, MUTED, false);
+        addTopMargin(advanced, bypassNote, 5);
+        addBypassCheck(advanced, "Do not protect YouTube", "com.google.android.youtube");
+        addBypassCheck(advanced, "Do not protect Chrome", "com.android.chrome");
+        addBypassCheck(advanced, "Do not protect Instagram", "com.instagram.android");
+        addBypassCheck(advanced, "Do not protect Facebook", "com.facebook.katana");
 
-        TextView allowTitle = text("Allowlist", 14, INK, true);
-        addTopMargin(settings, allowTitle, 16);
+        TextView allowTitle = text("Allowed websites", 14, INK, true);
+        addTopMargin(advanced, allowTitle, 16);
         allowDomainInput = new EditText(this);
         allowDomainInput.setSingleLine(true);
         allowDomainInput.setHint("example.com");
@@ -757,7 +771,7 @@ public class MainActivity extends Activity {
         allowDomainInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         allowDomainInput.setPadding(dp(14), 0, dp(14), 0);
         applyTvFocus(allowDomainInput);
-        addTopMargin(settings, allowDomainInput, 8, new LinearLayout.LayoutParams(-1, dp(50)));
+        addTopMargin(advanced, allowDomainInput, 8, new LinearLayout.LayoutParams(-1, dp(50)));
 
         LinearLayout allowButtons = row();
         Button addAllowed = smallButton("Allow domain");
@@ -776,16 +790,16 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams clearAllowedParams = new LinearLayout.LayoutParams(0, dp(46), 1);
         clearAllowedParams.leftMargin = dp(10);
         allowButtons.addView(clearAllowed, clearAllowedParams);
-        addTopMargin(settings, allowButtons, 10);
+        addTopMargin(advanced, allowButtons, 10);
 
         allowlistText = text("", 12, MUTED, false);
         allowlistText.setLineSpacing(dp(4), 1.0f);
         allowlistText.setBackground(roundRect(0xFFF8FAFC, 16));
         allowlistText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        addTopMargin(settings, allowlistText, 10);
+        addTopMargin(advanced, allowlistText, 10);
 
-        TextView blocklistTitle = text("Blocklist sources", 14, INK, true);
-        addTopMargin(settings, blocklistTitle, 16);
+        TextView blocklistTitle = text("Block rule sources", 14, INK, true);
+        addTopMargin(advanced, blocklistTitle, 16);
         blocklistUrlInput = new EditText(this);
         blocklistUrlInput.setSingleLine(false);
         blocklistUrlInput.setMinLines(3);
@@ -798,34 +812,36 @@ public class MainActivity extends Activity {
         blocklistUrlInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
         blocklistUrlInput.setPadding(dp(14), dp(12), dp(14), dp(12));
         applyTvFocus(blocklistUrlInput);
-        addTopMargin(settings, blocklistUrlInput, 8, new LinearLayout.LayoutParams(-1, dp(116)));
+        addTopMargin(advanced, blocklistUrlInput, 8, new LinearLayout.LayoutParams(-1, dp(116)));
 
-        Button updateBlocklists = smallButton("Update blocklists now");
+        Button updateBlocklists = smallButton("Update rules now");
         updateBlocklists.setOnClickListener(v -> runBlocklistUpdate(updateBlocklists));
-        addTopMargin(settings, updateBlocklists, 10, new LinearLayout.LayoutParams(-1, dp(48)));
+        addTopMargin(advanced, updateBlocklists, 10, new LinearLayout.LayoutParams(-1, dp(48)));
 
         blocklistMetaText = text("", 13, MUTED, false);
         blocklistMetaText.setLineSpacing(dp(5), 1.0f);
         blocklistMetaText.setBackground(roundRect(0xFFF8FAFC, 16));
         blocklistMetaText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        addTopMargin(settings, blocklistMetaText, 14);
+        addTopMargin(advanced, blocklistMetaText, 14);
 
+        TextView systemTitle = text("System help", 14, INK, true);
+        addTopMargin(settings, systemTitle, 16);
         batteryStatusText = text("", 13, MUTED, false);
-        addTopMargin(settings, batteryStatusText, 12);
+        addTopMargin(settings, batteryStatusText, 8);
         privateDnsStatusText = text("", 13, MUTED, false);
         addTopMargin(settings, privateDnsStatusText, 4);
         LinearLayout systemButtons = row();
-        Button batteryButton = smallButton("Battery settings");
+        Button batteryButton = smallButton("Fix battery");
         batteryButton.setOnClickListener(v -> openBatterySettings());
         systemButtons.addView(batteryButton, new LinearLayout.LayoutParams(0, dp(48), 1));
-        Button privateDns = smallButton("Private DNS");
+        Button privateDns = smallButton("Fix DNS");
         privateDns.setOnClickListener(v -> openPrivateDnsSettings());
         LinearLayout.LayoutParams dnsParams = new LinearLayout.LayoutParams(0, dp(48), 1);
         dnsParams.leftMargin = dp(10);
         systemButtons.addView(privateDns, dnsParams);
         addTopMargin(settings, systemButtons, 10);
 
-        Button clearStats = smallButton("Clear stats and logs");
+        Button clearStats = smallButton("Reset activity");
         clearStats.setOnClickListener(view -> {
             StatsStore.clear(this);
             renderState();
@@ -837,7 +853,7 @@ public class MainActivity extends Activity {
         LinearLayout diagnostics = card(20, CARD_BG);
         diagnostics.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, diagnostics, 16);
-        diagnostics.addView(sectionTitle("Diagnostics", "Real blocker health"));
+        diagnostics.addView(sectionTitle("App check", "Make sure SafePulse is ready"));
 
         diagnosticsText = text("", 13, MUTED, false);
         diagnosticsText.setLineSpacing(dp(5), 1.0f);
@@ -845,20 +861,20 @@ public class MainActivity extends Activity {
         diagnosticsText.setPadding(dp(14), dp(12), dp(14), dp(12));
         addTopMargin(diagnostics, diagnosticsText, 14);
 
-        Button refresh = smallButton("Refresh diagnostics");
+        Button refresh = smallButton("Refresh check");
         refresh.setOnClickListener(v -> renderDiagnosticsState());
         addTopMargin(diagnostics, refresh, 12, new LinearLayout.LayoutParams(-1, dp(50)));
 
         LinearLayout test = card(20, CARD_BG);
         test.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, test, 16);
-        test.addView(sectionTitle("Blocking test", "Checks current rules"));
+        test.addView(sectionTitle("Test blocking", "Quick rule check"));
 
-        TextView testNote = text("This test uses the same decision logic as the VPN service. It confirms the rules would block known ad/tracker domains and allow a normal safe domain.", 13, MUTED, false);
+        TextView testNote = text("Tap once to check if common ad and tracker domains are blocked while normal websites stay allowed.", 13, MUTED, false);
         testNote.setLineSpacing(dp(4), 1.0f);
         addTopMargin(test, testNote, 10);
 
-        Button runTest = smallButton("Run blocking test");
+        Button runTest = smallButton("Run test");
         runTest.setOnClickListener(v -> runBlockingTest(runTest));
         addTopMargin(test, runTest, 12, new LinearLayout.LayoutParams(-1, dp(50)));
 
@@ -871,8 +887,8 @@ public class MainActivity extends Activity {
         LinearLayout tv = card(20, CARD_BG);
         tv.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, tv, 16);
-        tv.addView(sectionTitle("Fire TV setup", "Remote-friendly install notes"));
-        TextView tvText = text("On Fire TV, install the universal APK, approve unknown-app installation, allow the VPN permission, then use the remote center button to start or stop protection. Keep Private DNS off where available so apps do not bypass SafePulse.", 13, MUTED, false);
+        tv.addView(sectionTitle("Fire TV", "Simple setup"));
+        TextView tvText = text("Install the universal APK, allow the VPN permission, then press the remote center button to start or stop protection. If blocking is not working, turn off Private DNS where available.", 13, MUTED, false);
         tvText.setLineSpacing(dp(4), 1.0f);
         addTopMargin(tv, tvText, 10);
 
@@ -883,9 +899,9 @@ public class MainActivity extends Activity {
         LinearLayout about = card(20, CARD_BG);
         about.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, about, 16);
-        about.addView(sectionTitle("About SafePulse", "Product details"));
+        about.addView(sectionTitle("SafePulse", "Help and app details"));
         addTopMargin(about, text("Developed by JOJIN JOHN", 15, INK, true), 12);
-        TextView description = text("SafePulse starts only when you tap Start protection. It blocks ads and trackers at DNS level across apps that use system DNS. YouTube ads are best-effort because the official app can serve ads and videos from shared Google video systems; SafePulse avoids blocking those shared video hosts so playback keeps working.", 13, MUTED, false);
+        TextView description = text("SafePulse starts only when you tap Start. It blocks many ads, trackers, popups, and risky redirects across supported apps and browsers. Some streaming ads can still appear when they use the same servers as videos.", 13, MUTED, false);
         description.setLineSpacing(dp(4), 1.0f);
         addTopMargin(about, description, 8);
         Button linkedin = smallButton("LinkedIn profile");
@@ -903,7 +919,7 @@ public class MainActivity extends Activity {
         LinearLayout updates = card(20, CARD_BG);
         updates.setPadding(dp(18), dp(18), dp(18), dp(18));
         addTopMargin(root, updates, 16);
-        updates.addView(sectionTitle("App updates", "Free GitHub Release updater"));
+        updates.addView(sectionTitle("Updates", "Keep SafePulse current"));
 
         updateStatusText = text("Current version: " + currentVersionLabel(), 13, MUTED, false);
         updateStatusText.setLineSpacing(dp(4), 1.0f);
@@ -918,7 +934,7 @@ public class MainActivity extends Activity {
         updateNowButton.setOnClickListener(v -> openLatestRelease());
         addTopMargin(updates, updateNowButton, 10, new LinearLayout.LayoutParams(-1, dp(48)));
 
-        TextView updateNote = text("Uses free GitHub Releases. SafePulse picks a compatible APK for this device, or a universal APK, so phone, tablet, TV, and Fire TV updates do not conflict.", 12, MUTED, false);
+        TextView updateNote = text("SafePulse chooses the correct update for this device.", 12, MUTED, false);
         updateNote.setLineSpacing(dp(4), 1.0f);
         addTopMargin(updates, updateNote, 12);
 
@@ -1242,7 +1258,7 @@ public class MainActivity extends Activity {
         }
         if (recentBlocksText != null) recentBlocksText.setText(running ? formatRecentBlocks(stats) : "No blocked domains yet.");
         if (recentBlocksList != null) renderRecentBlocks(running, stats);
-        if (logsText != null) logsText.setText(running ? formatLogs(stats) : "No log entries yet.");
+        if (logsText != null) logsText.setText(running ? formatLogs(stats) : "No activity yet.");
         renderSetupState();
         renderSettingsState();
         renderDiagnosticsState();
@@ -1307,10 +1323,10 @@ public class MainActivity extends Activity {
             allowlistText.setText(allowlist.isEmpty() ? "No allowed domains." : TextUtils.join("\n", allowlist));
         }
         if (batteryStatusText != null) {
-            batteryStatusText.setText(isBatteryOptimizationIgnored() ? "Battery optimization: ignored" : "Battery optimization: may restrict background protection");
+            batteryStatusText.setText(isBatteryOptimizationIgnored() ? "Battery: ready" : "Battery: may stop background protection");
         }
         if (privateDnsStatusText != null) {
-            privateDnsStatusText.setText("Private DNS: " + privateDnsStatus());
+            privateDnsStatusText.setText(isPrivateDnsOk() ? "Private DNS: ready" : "Private DNS: may bypass blocking");
         }
     }
 
@@ -1328,22 +1344,22 @@ public class MainActivity extends Activity {
         String blocklistError = BlocklistManager.lastError(this);
 
         StringBuilder builder = new StringBuilder();
-        appendDiagnostic(builder, "Protection", running ? "running" : "stopped", running);
-        appendDiagnostic(builder, "VPN permission", vpnReady ? "allowed" : "required", vpnReady);
-        appendDiagnostic(builder, "DNS provider", AppSettings.getDnsProvider(this) + " (" + TextUtils.join(", ", AppSettings.getDnsServers(this)) + ")", true);
-        appendDiagnostic(builder, "Blocklist", formatNumber(bundled + remote) + " rules (" + formatNumber(bundled) + " bundled, " + formatNumber(remote) + " remote)", bundled + remote > 0);
-        appendDiagnostic(builder, "Remote update", lastUpdateText, blocklistError == null || blocklistError.isEmpty());
+        appendDiagnostic(builder, "Protection", running ? "on" : "off", running);
+        appendDiagnostic(builder, "VPN permission", vpnReady ? "allowed" : "needs approval", vpnReady);
+        appendDiagnostic(builder, "DNS", AppSettings.getDnsProvider(this), true);
+        appendDiagnostic(builder, "Block rules", formatNumber(bundled + remote) + " loaded", bundled + remote > 0);
+        appendDiagnostic(builder, "Rule update", lastUpdateText, blocklistError == null || blocklistError.isEmpty());
         appendDiagnostic(builder, "Private DNS", privateDnsStatus(), privateDnsOk);
         appendDiagnostic(builder, "Battery", batteryReady ? "optimization ignored" : "may restrict background service", batteryReady);
         appendDiagnostic(builder, "Notifications", notificationsReady ? "allowed or not required" : "permission recommended", notificationsReady);
         appendDiagnostic(builder, "Device mode", currentDeviceLabel(), true);
-        builder.append("\nYouTube: best-effort DNS blocking. SafePulse does not block shared googlevideo hosts because that can break playback.");
+        builder.append("\nYouTube: best effort. SafePulse avoids blocking video servers that can break playback.");
         diagnosticsText.setText(builder.toString());
     }
 
     private void appendDiagnostic(StringBuilder builder, String label, String value, boolean healthy) {
         if (builder.length() > 0) builder.append('\n');
-        builder.append(healthy ? "OK  " : "WARN ")
+        builder.append(healthy ? "Good - " : "Check - ")
                 .append(label)
                 .append(": ")
                 .append(value);
@@ -1368,17 +1384,17 @@ public class MainActivity extends Activity {
             total += 1; passed += appendRuleTest(result, effectiveBlocklist, "example.com", false);
             total += 1; passed += appendRuleTest(result, effectiveBlocklist, "youtube.com", false);
 
-            result.insert(0, "Passed " + passed + " of " + total + " checks.\n");
+            result.insert(0, "Result: " + passed + " of " + total + " checks passed.\n");
             if (!AdBlockVpnService.isRunning()) {
-                result.append("\nProtection is stopped, so this is a rules-only test. Start protection to apply these decisions to device traffic.");
+                result.append("\nProtection is off. Start protection to use these rules on your device.");
             } else {
-                result.append("\nProtection is running, so matching DNS requests should be blocked live.");
+                result.append("\nProtection is on. Matching requests should be blocked live.");
             }
 
             handler.post(() -> {
                 if (testResultText != null) testResultText.setText(result.toString());
                 button.setEnabled(true);
-                button.setText("Run blocking test");
+                button.setText("Run test");
             });
         }).start();
     }
@@ -1388,10 +1404,10 @@ public class MainActivity extends Activity {
         boolean blocked = reason != null;
         boolean passed = blocked == expectedBlocked;
         if (builder.length() > 0) builder.append('\n');
-        builder.append(passed ? "PASS " : "FAIL ")
+        builder.append(passed ? "Good - " : "Check - ")
                 .append(host)
                 .append(" -> ")
-                .append(blocked ? "blocked (" + reason + ")" : "allowed");
+                .append(blocked ? "blocked" : "allowed");
         return passed ? 1 : 0;
     }
 

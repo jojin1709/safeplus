@@ -4,6 +4,8 @@ SafePulse is a clean Android DNS/VPN protection app built by [Jojin John](https:
 
 The app starts only when the user taps **Start protection**. It runs as an Android `VpnService` with a foreground notification and can be stopped from inside the app at any time.
 
+SafePulse is designed to be simple by default. Normal users can use **Home**, **Activity**, **Settings**, **Check**, and **Help** without needing technical DNS knowledge. Expert controls stay inside **Settings > Advanced options**.
+
 ## Download
 
 Get the latest APK from GitHub Releases:
@@ -29,6 +31,7 @@ Android may ask for permission to install apps from the browser or file manager.
 - Android TV / Fire TV launcher support with a remote-friendly interface
 - In-app diagnostics screen for VPN, DNS, blocklist, Private DNS, battery, notification, and device-mode status
 - Blocking self-test that checks the same rule decisions used by the VPN service
+- Simple default settings with advanced DNS, allowlist, app bypass, and rule-source controls hidden until needed
 - Free in-app update checker using GitHub Releases
 
 ## Important Limits
@@ -73,7 +76,7 @@ For updates to work:
 1. Keep the package id as `com.jojinjohn.safepulse`.
 2. Increase `versionCode` in `app/build.gradle`.
 3. Build the APK with the same release signing key.
-4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.3.0.apk`.
+4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.3.1.apk`.
 
 ## Diagnostics
 
