@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0
+
+- Added Advanced option for Strict YouTube blocking.
+- Strict YouTube mode is off by default and can be turned off if videos get stuck.
+- Updated the blocking test to show whether shared YouTube video delivery hosts are blocked in strict mode.
+
 ## v1.3.1
 
 - Simplified the app navigation labels for normal users.

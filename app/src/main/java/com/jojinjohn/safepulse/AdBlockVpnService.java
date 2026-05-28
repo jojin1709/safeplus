@@ -120,6 +120,14 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "sponsor",
             "sponsors"
     };
+    private static final String[] STRICT_YOUTUBE_DOMAINS = {
+            "googlevideo.com",
+            "youtubei.googleapis.com",
+            "youtube.googleapis.com",
+            "youtube-nocookie.com",
+            "ytimg.com",
+            "yt3.ggpht.com"
+    };
     private static final String[] TRACKER_DOMAINS = {
             "google-analytics.com",
             "analytics.google.com",
@@ -400,6 +408,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
         if (AppSettings.isNeverConsentEnabled(context) && isNeverConsentHost(name)) return "Never-consent";
         if (AppSettings.isRedirectProtectionEnabled(context) && isRedirectHost(name)) return "Redirect protection";
         if (AppSettings.isAntiTrackingEnabled(context) && isTrackingHost(name)) return "Anti-tracking";
+        if (AppSettings.isStrictYoutubeEnabled(context) && isStrictYoutubeHost(name)) return "Strict YouTube";
         if (AppSettings.isAggressiveBlockingEnabled(context) && isAggressiveAdHost(name)) return "Ads / tracker";
         while (!name.isEmpty()) {
             if (blocklist != null && blocklist.contains(name)) return "Blocklist";
@@ -412,6 +421,10 @@ public class AdBlockVpnService extends VpnService implements Runnable {
 
     private static boolean isAggressiveAdHost(String host) {
         return matchesModuleHost(host, AGGRESSIVE_DOMAINS, AGGRESSIVE_LABELS);
+    }
+
+    private static boolean isStrictYoutubeHost(String host) {
+        return matchesModuleHost(host, STRICT_YOUTUBE_DOMAINS, new String[0]);
     }
 
     private static boolean isTrackingHost(String host) {

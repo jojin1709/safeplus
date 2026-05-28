@@ -95,8 +95,8 @@ public class MainActivity extends Activity {
     private static final int TAB_DIAGNOSTICS = 3;
     private static final int TAB_ABOUT = 4;
     private static final int TAB_COUNT = 5;
-    private static final String APP_VERSION_NAME = "1.3.1";
-    private static final long APP_VERSION_CODE = 6L;
+    private static final String APP_VERSION_NAME = "1.4.0";
+    private static final long APP_VERSION_CODE = 7L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -710,6 +710,18 @@ public class MainActivity extends Activity {
         addTopMargin(settings, advanced, 12);
         advanced.addView(sectionTitle("Advanced options", "Only change these if you know why"));
 
+        CheckBox strictYoutube = checkBox("Strict YouTube blocking");
+        strictYoutube.setChecked(AppSettings.isStrictYoutubeEnabled(this));
+        strictYoutube.setOnCheckedChangeListener((buttonView, checked) -> {
+            AppSettings.setStrictYoutubeEnabled(this, checked);
+            renderSettingsState();
+        });
+        addTopMargin(advanced, strictYoutube, 12);
+
+        TextView strictYoutubeNote = text("May block more YouTube ads, but can also make videos or thumbnails stop loading. Turn it off to return to normal mode.", 12, ERROR, false);
+        strictYoutubeNote.setLineSpacing(dp(4), 1.0f);
+        addTopMargin(advanced, strictYoutubeNote, 8);
+
         TextView dnsLabel = text("DNS provider", 14, INK, true);
         addTopMargin(advanced, dnsLabel, 16);
         Spinner dnsSpinner = new Spinner(this);
@@ -1310,6 +1322,7 @@ public class MainActivity extends Activity {
                         + "Allowlist: " + (allowlist.isEmpty() ? "off" : allowlist.size() + " domain(s)") + "\n"
                         + "DNS: " + AppSettings.getDnsProvider(this) + "\n"
                         + "Aggressive mode: " + onOff(AppSettings.isAggressiveBlockingEnabled(this)) + "\n"
+                        + "Strict YouTube: " + onOff(AppSettings.isStrictYoutubeEnabled(this)) + "\n"
                         + "Encrypted DNS guard: " + onOff(AppSettings.isDohGuardEnabled(this)) + "\n"
                         + "Anti-tracking: " + onOff(AppSettings.isAntiTrackingEnabled(this)) + "\n"
                         + "Never-consent: " + onOff(AppSettings.isNeverConsentEnabled(this)) + "\n"
@@ -1383,6 +1396,7 @@ public class MainActivity extends Activity {
             total += 1; passed += appendRuleTest(result, effectiveBlocklist, "clickserve.dartsearch.net", true);
             total += 1; passed += appendRuleTest(result, effectiveBlocklist, "example.com", false);
             total += 1; passed += appendRuleTest(result, effectiveBlocklist, "youtube.com", false);
+            total += 1; passed += appendRuleTest(result, effectiveBlocklist, "r1---sn-a5mekn6z.googlevideo.com", AppSettings.isStrictYoutubeEnabled(this));
 
             result.insert(0, "Result: " + passed + " of " + total + " checks passed.\n");
             if (!AdBlockVpnService.isRunning()) {

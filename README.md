@@ -32,6 +32,7 @@ Android may ask for permission to install apps from the browser or file manager.
 - In-app diagnostics screen for VPN, DNS, blocklist, Private DNS, battery, notification, and device-mode status
 - Blocking self-test that checks the same rule decisions used by the VPN service
 - Simple default settings with advanced DNS, allowlist, app bypass, and rule-source controls hidden until needed
+- Optional **Strict YouTube blocking** in Advanced options for testing stronger YouTube blocking
 - Free in-app update checker using GitHub Releases
 
 ## Important Limits
@@ -45,6 +46,8 @@ SafePulse is a DNS/VPN-style blocker. It can block domain lookups, but it cannot
 - Streaming apps on Fire TV may still show ads when ads and video streams come from the same service infrastructure.
 
 SafePulse blocks known YouTube ad, stats, Google ads, and IMA SDK DNS hosts where it can do that safely. It does not block broad `googlevideo.com` delivery hosts because those hosts can carry the actual video stream.
+
+Advanced users can turn on **Settings > Advanced options > Strict YouTube blocking** to test stronger blocking. This mode may block shared YouTube video/API hosts, so videos, thumbnails, or the official YouTube app may stop loading. Turn it off to return to normal video-friendly mode.
 
 ## Fire TV / Android TV
 
@@ -76,7 +79,7 @@ For updates to work:
 1. Keep the package id as `com.jojinjohn.safepulse`.
 2. Increase `versionCode` in `app/build.gradle`.
 3. Build the APK with the same release signing key.
-4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.3.1.apk`.
+4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.4.0.apk`.
 
 ## Diagnostics
 
