@@ -15,9 +15,38 @@ android {
     defaultConfig {
         applicationId "com.jojinjohn.safepulse"
         minSdk 23
-        targetSdk 33
-        versionCode 7
-        versionName "1.4.0"
+        targetSdk 34
+        versionCode 8
+        versionName "1.5.0"
+    }
+
+    flavorDimensions "platform"
+    productFlavors {
+        phone {
+            dimension "platform"
+            applicationId "com.jojinjohn.safepulse"
+            resValue "string", "app_label", "SafePulse"
+            buildConfigField "String", "PLATFORM", "\"phone\""
+            buildConfigField "boolean", "IS_TV", "false"
+        }
+
+        tv {
+            dimension "platform"
+            applicationId "com.jojinjohn.safepulse.tv"
+            minSdk 21
+            resValue "string", "app_label", "SafePulse TV"
+            buildConfigField "String", "PLATFORM", "\"tv\""
+            buildConfigField "boolean", "IS_TV", "true"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     signingConfigs {
@@ -36,7 +65,17 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
     }
 }

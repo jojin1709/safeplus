@@ -95,17 +95,25 @@ public class MainActivity extends Activity {
     private static final int TAB_DIAGNOSTICS = 3;
     private static final int TAB_ABOUT = 4;
     private static final int TAB_COUNT = 5;
-    private static final String APP_VERSION_NAME = "1.4.0";
-    private static final long APP_VERSION_CODE = 7L;
+    private static final String APP_VERSION_NAME = "1.5.0";
+    private static final long APP_VERSION_CODE = 8L;
     private static final String RELEASES_API_URL = "https://api.github.com/repos/jojin1709/safeplus/releases/latest";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.US);
+    private boolean lastVpnRunning = false;
+    private long lastBlockedCount = -1;
     private final Runnable refreshRunnable = new Runnable() {
         @Override
         public void run() {
-            renderState();
-            handler.postDelayed(this, 1000L);
+            boolean vpnRunning = AdBlockVpnService.isRunning();
+            StatsStore.Snapshot snap = StatsStore.snapshot(MainActivity.this);
+            if (vpnRunning != lastVpnRunning || snap.blocked != lastBlockedCount) {
+                renderState();
+                lastVpnRunning = vpnRunning;
+                lastBlockedCount = snap.blocked;
+            }
+            handler.postDelayed(this, 2000L);
         }
     };
 
@@ -1785,6 +1793,9 @@ public class MainActivity extends Activity {
         if (value == SOFT_BLUE) return DARK_SOFT_BLUE;
         if (value == SURFACE_LIGHT || value == 0xFFF8FAFC) return DARK_SURFACE;
         if (value == 0xFFFFF7ED) return 0xFF431407;
+        if (value == 0x33FFFFFF) return 0x33000000;
+        if (value == 0x22FFFFFF) return 0x22000000;
+        if (value == 0x55FFFFFF) return 0x55000000;
         return value;
     }
 
@@ -1846,8 +1857,13 @@ public class MainActivity extends Activity {
         return seconds + "s";
     }
 
+    private float cachedDensity = 0;
+
     private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+        if (cachedDensity == 0) {
+            cachedDensity = getResources().getDisplayMetrics().density;
+        }
+        return Math.round(value * cachedDensity);
     }
 
     private boolean isTabletLayout() {
@@ -1855,6 +1871,7 @@ public class MainActivity extends Activity {
     }
 
     private boolean isTvLayout() {
+        if (BuildConfig.IS_TV) return true;
         return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION;
     }
 
@@ -1886,7 +1903,16 @@ public class MainActivity extends Activity {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         window.setStatusBarColor(color(BG));
         window.setNavigationBarColor(color(BG));
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            android.view.WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                int appearance = isDarkMode() ? 0 : android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS;
+                if (!isDarkMode()) {
+                    appearance |= android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                }
+                controller.setSystemBarsAppearance(appearance, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+            }
+        } else if (Build.VERSION.SDK_INT >= 23) {
             int flags = isDarkMode() ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             if (!isDarkMode() && Build.VERSION.SDK_INT >= 26) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;

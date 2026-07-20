@@ -14,6 +14,11 @@ Get the latest APK from GitHub Releases:
 https://github.com/jojin1709/safeplus/releases/latest
 ```
 
+SafePulse is available as two separate APKs:
+
+- **SafePulse-phone-v1.5.0.apk** — For Android phones and tablets. Includes Quick Settings tile for easy toggle.
+- **SafePulse-tv-v1.5.0.apk** — For Amazon Fire TV and Android TV. Optimized for remote control navigation with leanback launcher.
+
 Android may ask for permission to install apps from the browser or file manager. The app also asks for VPN approval because DNS filtering is handled through Android's VPN service APIs.
 
 ## Features
@@ -29,10 +34,11 @@ Android may ask for permission to install apps from the browser or file manager.
 - Light and dark mode
 - Responsive UI for phones, foldables, tablets, Android TV, and Fire TV
 - Android TV / Fire TV launcher support with a remote-friendly interface
+- Android Quick Settings tile for easy on/off toggle from notification shade
 - In-app diagnostics screen for VPN, DNS, blocklist, Private DNS, battery, notification, and device-mode status
 - Blocking self-test that checks the same rule decisions used by the VPN service
 - Simple default settings with advanced DNS, allowlist, app bypass, and rule-source controls hidden until needed
-- Optional **Strict YouTube blocking** in Advanced options for testing stronger YouTube blocking
+- Optional **Strict YouTube blocking** in Advanced options for stronger YouTube ad blocking (ON by default)
 - Free in-app update checker using GitHub Releases
 
 ## Important Limits
@@ -47,13 +53,13 @@ SafePulse is a DNS/VPN-style blocker. It can block domain lookups, but it cannot
 
 SafePulse blocks known YouTube ad, stats, Google ads, and IMA SDK DNS hosts where it can do that safely. It does not block broad `googlevideo.com` delivery hosts because those hosts can carry the actual video stream.
 
-Advanced users can turn on **Settings > Advanced options > Strict YouTube blocking** to test stronger blocking. This mode may block shared YouTube video/API hosts, so videos, thumbnails, or the official YouTube app may stop loading. Turn it off to return to normal video-friendly mode.
+Advanced users can turn on **Settings > Advanced options > Strict YouTube blocking** to test stronger blocking. This mode may block shared YouTube video/API hosts, so videos, thumbnails, or the official YouTube app may stop loading. Turn it off to return to normal video-friendly mode. Strict YouTube blocking is ON by default for stronger ad blocking.
 
 ## Fire TV / Android TV
 
-SafePulse includes Android TV launcher support, a TV banner, larger controls, and D-pad focus behavior for remotes. The same APK can be sideloaded onto compatible Android TV and Amazon Fire TV devices.
+SafePulse includes Android TV launcher support, a TV banner, larger controls, and D-pad focus behavior for remotes. The TV APK is specifically optimized for Fire TV and Android TV devices.
 
-On Fire TV, install the APK from the latest GitHub Release, approve unknown-app installation if needed, then open SafePulse from the apps screen. The first start still requires Android's VPN permission so SafePulse can filter DNS requests locally.
+On Fire TV, install the TV APK from the latest GitHub Release, approve unknown-app installation if needed, then open SafePulse from the apps screen. The first start still requires Android's VPN permission so SafePulse can filter DNS requests locally.
 
 ## Updates
 
@@ -69,17 +75,18 @@ When a newer release is available, the app shows **Update now** and opens the AP
 
 SafePulse uses a device-aware update picker:
 
-- Phone and tablet builds should use `phone`, `mobile`, `tablet`, or `universal` in the APK file name.
-- Android TV and Fire TV builds should use `tv`, `fire`, `leanback`, or `universal` in the APK file name.
-- A universal APK can update every supported device when one APK is intended for all devices.
-- Phone/tablet devices will not auto-pick a TV-only APK, and TV/Fire TV devices will not auto-pick a mobile-only APK.
+- Phone APK (`SafePulse-phone-v*.apk`) updates phone and tablet devices.
+- TV APK (`SafePulse-tv-v*.apk`) updates Fire TV and Android TV devices.
+- Each device type only picks its matching APK.
 
 For updates to work:
 
 1. Keep the package id as `com.jojinjohn.safepulse`.
 2. Increase `versionCode` in `app/build.gradle`.
-3. Build the APK with the same release signing key.
-4. Publish the APK in a new GitHub Release with a clear asset name, for example `SafePulse-universal-v1.4.0.apk`.
+3. Build both APKs with the same release signing key.
+4. Publish both APKs in a new GitHub Release with clear asset names:
+   - `SafePulse-phone-v1.5.0.apk`
+   - `SafePulse-tv-v1.5.0.apk`
 
 ## Diagnostics
 
@@ -101,53 +108,60 @@ The blocking test is honest: it checks whether SafePulse's current rules would b
 Install Android Studio or the Android SDK, then run:
 
 ```bash
-gradle assembleDebug
+gradle assemblePhoneDebug    # Phone/tablet APK
+gradle assembleTvDebug       # Fire TV / Android TV APK
 ```
 
-The debug APK is created at:
+The debug APKs are created at:
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/phone/debug/   # Phone APK
+app/build/outputs/apk/tv/debug/      # TV APK
 ```
 
 For a signed release build, create `keystore.properties` from `keystore.properties.example`, create the matching local `.jks` key, then run:
 
 ```bash
-gradle assembleRelease
+gradle assemblePhoneRelease   # Phone/tablet release APK
+gradle assembleTvRelease      # Fire TV / Android TV release APK
 ```
 
-The signed release APK is created at:
+Or use the build scripts:
 
-```text
-app/build/outputs/apk/release/app-release.apk
+```powershell
+.\build-release.ps1    # Builds both Phone and TV release APKs
+.\build-apk.ps1        # Builds both Phone and TV debug APKs
 ```
 
 Do not commit `keystore.properties` or any `.jks` file. The same release key is required for future app updates.
 
 ## GitHub Actions
 
-This repository includes a free GitHub Actions workflow that builds the debug APK on pushes, pull requests, and manual runs. Signed release APKs still need the private release keystore and should be built locally or with encrypted CI secrets.
+This repository includes a free GitHub Actions workflow that builds both Phone and TV debug APKs on pushes, pull requests, and manual runs. Signed release APKs still need the private release keystore and should be built locally or with encrypted CI secrets.
 
 ## Real-Device Testing
 
-Before publishing a release, test on at least one Android phone and one Android TV / Fire TV device:
+Before publishing a release, test on at least one Android phone and one Fire TV / Android TV device:
 
-1. Install the latest universal APK.
+1. Install the Phone APK on your phone and the TV APK on your Fire TV.
 2. Open SafePulse and approve VPN permission.
 3. Complete the setup checklist.
 4. Start protection.
 5. Open **Checks** and run the blocking test.
 6. Browse a normal website to confirm loading still works.
 7. Open YouTube or a streaming app to confirm playback is not broken.
+8. Test the Quick Settings tile on phone (swipe down notification shade).
 
 ## Project Structure
 
 ```text
-app/src/main/java/com/jojinjohn/safepulse/   Android Java source
-app/src/main/res/                            UI resources and app icons
-app/src/main/assets/blocklist.txt            Bundled starter blocklist
-build-release.ps1                            Local release build helper
-keystore.properties.example                  Signing config template
+app/src/main/                     Shared code (VPN, blocklist, stats, UI)
+app/src/phone/                    Phone-specific manifest + Quick Settings tile
+app/src/tv/                       TV-specific manifest + leanback launcher
+app/src/main/assets/blocklist.txt Bundled starter blocklist (223 domains)
+build-release.ps1                 Release build script (both flavors)
+build-apk.ps1                     Debug build script (both flavors)
+keystore.properties.example       Signing config template
 ```
 
 ## Privacy

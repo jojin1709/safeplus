@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class StatsStore {
     private static final String PREFS = "blocker_stats";
@@ -18,23 +18,31 @@ public final class StatsStore {
     private static final String KEY_EVENTS = "events";
     private static final int MAX_RECENT = 12;
     private static final int MAX_EVENTS = 120;
+    private static final long FLUSH_INTERVAL_MS = 5000;
+
+    private static volatile long memBlocked = 0;
+    private static volatile long memAllowed = 0;
+    private static volatile long memStartedAt = 0;
+    private static volatile List<RecentBlock> memRecent = new ArrayList<>();
+    private static volatile List<LogEvent> memEvents = new ArrayList<>();
+    private static final AtomicLong lastFlush = new AtomicLong(0);
 
     private StatsStore() {
     }
 
     public static synchronized void markStarted(Context context) {
-        prefs(context).edit().putLong(KEY_STARTED_AT, System.currentTimeMillis()).apply();
+        memStartedAt = System.currentTimeMillis();
+        prefs(context).edit().putLong(KEY_STARTED_AT, memStartedAt).apply();
     }
 
     public static synchronized void markStopped(Context context) {
+        memStartedAt = 0;
         prefs(context).edit().putLong(KEY_STARTED_AT, 0L).apply();
     }
 
     public static synchronized void recordAllowed(Context context) {
-        SharedPreferences preferences = prefs(context);
-        preferences.edit()
-                .putLong(KEY_ALLOWED, preferences.getLong(KEY_ALLOWED, 0L) + 1L)
-                .apply();
+        memAllowed++;
+        maybeFlush(context);
     }
 
     public static synchronized void recordBlocked(Context context, String host) {
@@ -42,14 +50,14 @@ public final class StatsStore {
     }
 
     public static synchronized void recordBlocked(Context context, String host, String categoryOverride) {
-        SharedPreferences preferences = prefs(context);
         String normalizedHost = host == null ? "unknown" : host.toLowerCase(Locale.ROOT);
         String category = categoryOverride == null || categoryOverride.isEmpty() ? categoryFor(normalizedHost) : categoryOverride;
-        List<RecentBlock> recent = parseRecent(preferences.getString(KEY_RECENT_BLOCKS, ""));
-        LinkedHashMap<String, RecentBlock> merged = new LinkedHashMap<>();
 
+        memBlocked++;
+
+        LinkedHashMap<String, RecentBlock> merged = new LinkedHashMap<>();
         RecentBlock current = null;
-        for (RecentBlock block : recent) {
+        for (RecentBlock block : memRecent) {
             if (block.host.equals(normalizedHost)) {
                 current = block;
             } else {
@@ -69,45 +77,80 @@ public final class StatsStore {
             if (ordered.size() >= MAX_RECENT) break;
             ordered.put(block.host, block);
         }
+        memRecent = new ArrayList<>(ordered.values());
 
-        preferences.edit()
-                .putLong(KEY_BLOCKED, preferences.getLong(KEY_BLOCKED, 0L) + 1L)
-                .putString(KEY_RECENT_BLOCKS, serializeRecent(new ArrayList<>(ordered.values())))
-                .putString(KEY_EVENTS, serializeEvents(addEvent(
-                        parseEvents(preferences.getString(KEY_EVENTS, "")),
-                        new LogEvent(System.currentTimeMillis(), "BLOCKED", normalizedHost, category)
-                )))
-                .apply();
+        List<LogEvent> newEvents = new ArrayList<>();
+        newEvents.add(new LogEvent(System.currentTimeMillis(), "BLOCKED", normalizedHost, category));
+        for (LogEvent existing : memEvents) {
+            if (newEvents.size() >= MAX_EVENTS) break;
+            newEvents.add(existing);
+        }
+        memEvents = newEvents;
+
+        maybeFlush(context);
+    }
+
+    public static synchronized void loadFromDisk(Context context) {
+        SharedPreferences preferences = prefs(context);
+        memBlocked = preferences.getLong(KEY_BLOCKED, 0L);
+        memAllowed = preferences.getLong(KEY_ALLOWED, 0L);
+        memStartedAt = preferences.getLong(KEY_STARTED_AT, 0L);
+        memRecent = parseRecent(preferences.getString(KEY_RECENT_BLOCKS, ""));
+        memEvents = parseEvents(preferences.getString(KEY_EVENTS, ""));
     }
 
     public static synchronized Snapshot snapshot(Context context) {
-        SharedPreferences preferences = prefs(context);
-        long blocked = preferences.getLong(KEY_BLOCKED, 0L);
-        long allowed = preferences.getLong(KEY_ALLOWED, 0L);
         return new Snapshot(
-                blocked,
-                allowed,
-                blocked + allowed,
-                preferences.getLong(KEY_STARTED_AT, 0L),
-                parseRecent(preferences.getString(KEY_RECENT_BLOCKS, "")),
-                parseEvents(preferences.getString(KEY_EVENTS, ""))
+                memBlocked,
+                memAllowed,
+                memBlocked + memAllowed,
+                memStartedAt,
+                new ArrayList<>(memRecent),
+                new ArrayList<>(memEvents)
         );
     }
 
     public static synchronized void clear(Context context) {
-        SharedPreferences preferences = prefs(context);
-        long startedAt = preferences.getLong(KEY_STARTED_AT, 0L);
-        preferences.edit()
+        long startedAt = memStartedAt;
+        memBlocked = 0;
+        memAllowed = 0;
+        memRecent = new ArrayList<>();
+        memEvents = new ArrayList<>();
+        prefs(context).edit()
                 .clear()
                 .putLong(KEY_STARTED_AT, startedAt)
                 .apply();
     }
 
     public static synchronized void clearStopped(Context context) {
+        memBlocked = 0;
+        memAllowed = 0;
+        memRecent = new ArrayList<>();
+        memEvents = new ArrayList<>();
+        memStartedAt = 0;
+        prefs(context).edit().clear().apply();
+    }
+
+    private static void maybeFlush(Context context) {
+        long now = System.currentTimeMillis();
+        if (now - lastFlush.get() >= FLUSH_INTERVAL_MS) {
+            lastFlush.set(now);
+            flushToDisk(context);
+        }
+    }
+
+    private static synchronized void flushToDisk(Context context) {
         prefs(context).edit()
-                .clear()
-                .putLong(KEY_STARTED_AT, 0L)
+                .putLong(KEY_BLOCKED, memBlocked)
+                .putLong(KEY_ALLOWED, memAllowed)
+                .putLong(KEY_STARTED_AT, memStartedAt)
+                .putString(KEY_RECENT_BLOCKS, serializeRecent(memRecent))
+                .putString(KEY_EVENTS, serializeEvents(memEvents))
                 .apply();
+    }
+
+    public static void forceFlush(Context context) {
+        flushToDisk(context);
     }
 
     private static SharedPreferences prefs(Context context) {
@@ -137,16 +180,6 @@ public final class StatsStore {
             builder.append(block.host).append('|').append(block.count).append('|').append(block.lastSeen);
         }
         return builder.toString();
-    }
-
-    private static List<LogEvent> addEvent(List<LogEvent> events, LogEvent event) {
-        List<LogEvent> updated = new ArrayList<>();
-        updated.add(event);
-        for (LogEvent existing : events) {
-            if (updated.size() >= MAX_EVENTS) break;
-            updated.add(existing);
-        }
-        return updated;
     }
 
     private static List<LogEvent> parseEvents(String raw) {

@@ -45,14 +45,27 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "dns.nextdns.io",
             "dns.adguard-dns.com",
             "doh.cleanbrowsing.org",
-            "security.cloudflare-dns.com"
+            "security.cloudflare-dns.com",
+            "dns64.quad9.net",
+            "doh.dns.samsung.com",
+            "dns-family.adguard.com",
+            "dns-unfiltered.adguard.com",
+            "dns.alidns.com",
+            "doh.pub",
+            "dot.pub",
+            "doh.iqilin.com",
+            "dns.ipv6dns.com",
+            "skydns.ru",
+            "dns-family.starlink.com",
+            "odvr.nic.cz",
+            "dns.piaservices.net",
+            "dns.dnswarden.com"
     };
     private static final String[] AGGRESSIVE_DOMAINS = {
+            // Google Ads & YouTube
             "ads.youtube.com",
             "s.youtube.com",
             "ad.doubleclick.net",
-            "adservice.google.com",
-            "adservice.google.co.in",
             "googleads.g.doubleclick.net",
             "googleads4.g.doubleclick.net",
             "pubads.g.doubleclick.net",
@@ -60,22 +73,53 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "stats.g.doubleclick.net",
             "fls.doubleclick.net",
             "partnerad.l.doubleclick.net",
+            "static.doubleclick.net",
+            "adservice.google.com",
+            "adservice.google.co.in",
+            "adservice.google.com.tw",
+            "adservice.google.com.hk",
+            "adservice.google.com.sg",
+            "adservice.google.com.my",
+            "adservice.google.com.ph",
+            "adservice.google.com.vn",
+            "adservice.google.com.pk",
+            "adservice.google.com.bd",
+            "adservice.google.com.ua",
+            "adservice.google.com.pl",
+            "adservice.google.com.br",
+            "adservice.google.com.mx",
+            "adservice.google.com.ar",
+            "adservice.google.com.tr",
+            "adservice.google.com.sa",
+            "adservice.google.com.ae",
+            "adservice.google.com.ng",
+            "adservice.google.com.ke",
+            "adservice.google.com.eg",
+            "adservice.google.com.za",
             "pagead-googlehosted.l.google.com",
             "pagead2.googlesyndication.com",
             "pagead2.googleadservices.com",
             "pagead2.google.com",
+            "pagead.l.google.com",
             "tpc.googlesyndication.com",
             "googlesyndication.com",
+            "ade.googlesyndication.com",
             "googletagservices.com",
             "googletagservices.l.google.com",
-            "ade.googlesyndication.com",
+            "www-googletagmanager.l.google.com",
             "imasdk.googleapis.com",
-            "static.doubleclick.net",
             "video-stats.l.google.com",
             "fundingchoices.google.com",
             "fundingchoicesmessages.google.com",
             "mobileads.google.com",
             "googleadapis.l.google.com",
+            "encrypted-tbn0.gstatic.com",
+            // Facebook / Meta
+            "facebook.net",
+            "connect.facebook.net",
+            "fbcdn.net",
+            "graph.facebook.com",
+            // Major Ad Networks
             "amazon-adsystem.com",
             "media.net",
             "adnxs.com",
@@ -95,15 +139,72 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "doubleverify.com",
             "mgid.com",
             "adcolony.com",
-            "unityads.unity3d.com",
-            "vungle.com",
-            "applovin.com",
-            "ironsrc.com",
-            "admob.com",
+            "popads.net",
+            "propellerads.com",
+            "exoclick.com",
+            "bidswitch.net",
+            "sonobi.com",
+            "teads.com",
+            "adition.com",
+            "smartadserver.com",
+            "mathtag.com",
+            "turn.com",
+            "adform.com",
+            "bluekai.com",
+            "exelator.com",
+            "rlcdn.com",
+            "demdex.net",
+            "everesttech.net",
+            "adsymptotic.com",
+            "tapad.com",
+            "mookie1.com",
+            "bidgear.com",
+            "ad-maven.com",
+            "fyber.com",
+            "startapp.com",
+            "inmobi.com",
+            "smaato.net",
+            "adskeeper.com",
+            "revcontent.com",
+            "nativo.com",
+            "spotxchange.com",
+            "jivox.com",
+            "brightcom.com",
+            "simpli.fi",
+            "matomy.com",
+            "traffective.com",
+            "adnium.com",
+            "adcash.com",
+            "hilltopads.com",
+            "onclickads.net",
+            "adreactor.com",
+            "adroll.com",
+            "adstream.com",
+            "adtechus.com",
+            "advertising.com",
+            "tribalfusion.com",
+            "valueclick.com",
             "adsafeprotected.com",
             "moatads.com",
             "innovid.com",
-            "serving-sys.com"
+            "serving-sys.com",
+            // Mobile Ad SDKs
+            "applovin.com",
+            "unityads.unity3d.com",
+            "vungle.com",
+            "ironsrc.com",
+            "supersonicads.com",
+            "chartboost.com",
+            "admob.com",
+            // Push / notification ad platforms
+            "pushwoosh.com",
+            "onesignal.com",
+            "notifpush.com",
+            "pushengage.com",
+            "pushnami.com",
+            "aimtell.com",
+            "pushowl.com",
+            "subscribers.com"
     };
     private static final String[] AGGRESSIVE_LABELS = {
             "ad",
@@ -118,7 +219,40 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "banner",
             "banners",
             "sponsor",
-            "sponsors"
+            "sponsors",
+            "promo",
+            "promos",
+            "promotion",
+            "campaign",
+            "sponsorship",
+            "adslot",
+            "adunit",
+            "adzone",
+            "adwall",
+            "adpush",
+            "admixer",
+            "adzerk",
+            "adglare",
+            "adform",
+            "admarketplace",
+            "adroll",
+            "adsterra",
+            "admob",
+            "adsense",
+            "adwords",
+            "pagead",
+            "pubads",
+            "pubad",
+            "videoad",
+            "preroll",
+            "midroll",
+            "postroll",
+            "skippable",
+            "unskippable",
+            "companion",
+            "overlay",
+            "masthead",
+            "bumper"
     };
     private static final String[] STRICT_YOUTUBE_DOMAINS = {
             "googlevideo.com",
@@ -126,7 +260,21 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "youtube.googleapis.com",
             "youtube-nocookie.com",
             "ytimg.com",
-            "yt3.ggpht.com"
+            "yt3.ggpht.com",
+            "jnn-pa.googleapis.com",
+            "play-lh.googleusercontent.com",
+            "i.ytimg.com",
+            "i9.ytimg.com",
+            "s.youtube.com",
+            "s2.youtube.com",
+            "video-stats.l.google.com",
+            "youtube-ui.l.google.com",
+            "wide-youtube.l.google.com",
+            "yt3.l.google.com",
+            "yt4.l.google.com",
+            "rr5---sn-a5msenl6.googlevideo.com",
+            "rr1---sn-a5msenl6.googlevideo.com",
+            "rr3---sn-a5msenl6.googlevideo.com"
     };
     private static final String[] TRACKER_DOMAINS = {
             "google-analytics.com",
@@ -149,7 +297,48 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "bugsnag.com",
             "newrelic.com",
             "facebook.net",
-            "connect.facebook.net"
+            "connect.facebook.net",
+            "fullstory.com",
+            "crazyegg.com",
+            "mouseflow.com",
+            "luckyorange.com",
+            "heap.io",
+            "pendo.io",
+            "statsig.com",
+            "posthog.com",
+            "matomo.org",
+            "optimizely.com",
+            "convert.com",
+            "vwo.com",
+            "abtasty.com",
+            "inspectlet.com",
+            "usabilla.com",
+            "clarity.ms",
+            "smartlook.com",
+            "ptengine.com",
+            "contentsquare.com",
+            "quantummetric.com",
+            "blueconic.net",
+            "tealiumiq.com",
+            "launchdarkly.com",
+            "rudderstack.com",
+            "mparticle.com",
+            "lytics.io",
+            "treasuredata.com",
+            "zeotap.com",
+            "liftoff.io",
+            "liveramp.com",
+            "branch.io",
+            "appsflyer.com",
+            "adjust.com",
+            "singular.net",
+            "flurry.com",
+            "chartboost.com",
+            "leanplum.com",
+            "airship.com",
+            "batch.com",
+            "urbanairship.com",
+            "netmera.com"
     };
     private static final String[] TRACKER_LABELS = {
             "analytics",
@@ -162,7 +351,19 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "pixel",
             "beacon",
             "datadog",
-            "sentry"
+            "sentry",
+            "stats",
+            "insights",
+            "monitor",
+            "logger",
+            "report",
+            "log",
+            "events",
+            "event",
+            "hit",
+            "impression",
+            "view",
+            "engage"
     };
     private static final String[] CONSENT_DOMAINS = {
             "onetrust.com",
@@ -179,7 +380,17 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "iubenda.com",
             "sourcepointcmp.com",
             "privacy-center.org",
-            "consentframework.com"
+            "consentframework.com",
+            "termly.io",
+            "cookieyes.com",
+            "cookiepro.com",
+            "quantcast.com",
+            "quantcast.mgr.consensu.org",
+            "gdpr.eu",
+            "cookie-information.com",
+            "complianz.io",
+            "borlabs.io",
+            "european-privacy.eu"
     };
     private static final String[] CONSENT_LABELS = {
             "consent",
@@ -187,7 +398,15 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "cookieconsent",
             "cookielaw",
             "cookiebot",
-            "privacy"
+            "privacy",
+            "gdpr",
+            "ccpa",
+            "privacycenter",
+            "privacypolicy",
+            "cookienotice",
+            "cookiemanager",
+            "consentmanager",
+            "consentbanner"
     };
     private static final String[] REDIRECT_DOMAINS = {
             "clickserve.dartsearch.net",
@@ -205,7 +424,23 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "app.adjust.com",
             "appsflyer.com",
             "branch.io",
-            "onelink.me"
+            "onelink.me",
+            "go2cloud.org",
+            "clickmeter.com",
+            "trk.rs",
+            "bit.ly",
+            "tinyurl.com",
+            "t.co",
+            "bitly.com",
+            "rebrand.ly",
+            "shorte.st",
+            "bc.vc",
+            "adf.ly",
+            "sh.st",
+            "ouo.io",
+            "bluenik.com",
+            "partage.mobi",
+            "dl-protect.com"
     };
     private static final String[] REDIRECT_LABELS = {
             "click",
@@ -213,13 +448,23 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "clicktrack",
             "redirect",
             "redir",
-            "outbound"
+            "outbound",
+            "go",
+            "link",
+            "ref",
+            "affiliate",
+            "track",
+            "trk",
+            "jump",
+            "goto"
     };
 
     private ParcelFileDescriptor vpnInterface;
     private Thread worker;
     private volatile Set<String> blocklist = new HashSet<>();
     private int notificationTick = 0;
+    private volatile boolean blocklistUpdating = false;
+    private android.graphics.Bitmap cachedLargeIcon;
 
     public static boolean isRunning() {
         return RUNNING.get();
@@ -245,6 +490,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             AppSettings.migrateDefaults(this);
             createNotificationChannel();
             startForeground(1, buildNotification());
+            StatsStore.loadFromDisk(this);
             blocklist = BlocklistManager.loadEffectiveBlocklist(this);
             maybeUpdateBlocklist();
             StatsStore.markStarted(this);
@@ -303,7 +549,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
     public void run() {
         if (vpnInterface == null) return;
 
-        byte[] buffer = new byte[32767];
+        byte[] buffer = new byte[65535];
         try (
                 FileInputStream input = new FileInputStream(vpnInterface.getFileDescriptor());
                 java.io.FileOutputStream output = new java.io.FileOutputStream(vpnInterface.getFileDescriptor())
@@ -332,7 +578,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
 
     private byte[] handleIpv4Packet(byte[] packet, int length) {
         int ipHeaderLength = (packet[0] & 0x0F) * 4;
-        if (length < ipHeaderLength + 8 || packet[9] != 17) return null;
+        if (ipHeaderLength < 20 || length < ipHeaderLength + 8 || packet[9] != 17) return null;
 
         int udpOffset = ipHeaderLength;
         int srcPort = readShort(packet, udpOffset);
@@ -630,11 +876,17 @@ public class AdBlockVpnService extends VpnService implements Runnable {
 
     private void maybeUpdateBlocklist() {
         if (!AppSettings.isAutoUpdateEnabled(this) || !BlocklistManager.shouldAutoUpdate(this)) return;
+        if (blocklistUpdating) return;
+        blocklistUpdating = true;
         new Thread(() -> {
-            BlocklistManager.UpdateResult result = BlocklistManager.updateFromSource(this);
-            if (result.success) {
-                blocklist = BlocklistManager.loadEffectiveBlocklist(this);
-                updateNotification();
+            try {
+                BlocklistManager.UpdateResult result = BlocklistManager.updateFromSource(this);
+                if (result.success) {
+                    blocklist = BlocklistManager.loadEffectiveBlocklist(this);
+                    updateNotification();
+                }
+            } finally {
+                blocklistUpdating = false;
             }
         }, "safepulse-blocklist-update").start();
     }
@@ -652,8 +904,13 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             }
             vpnInterface = null;
         }
-        stopForeground(true);
-        StatsStore.clearStopped(this);
+        StatsStore.forceFlush(this);
+        StatsStore.markStopped(this);
+        if (Build.VERSION.SDK_INT >= 24) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
         stopSelf();
     }
 
@@ -663,14 +920,14 @@ public class AdBlockVpnService extends VpnService implements Runnable {
                 this,
                 0,
                 launchIntent,
-                Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0
+                PendingIntent.FLAG_IMMUTABLE
         );
         Intent stopIntent = new Intent(this, AdBlockVpnService.class).setAction(ACTION_STOP);
         PendingIntent stopPendingIntent = PendingIntent.getService(
                 this,
                 1,
                 stopIntent,
-                Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0
+                PendingIntent.FLAG_IMMUTABLE
         );
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
@@ -678,11 +935,14 @@ public class AdBlockVpnService extends VpnService implements Runnable {
                 : new Notification.Builder(this);
 
         StatsStore.Snapshot stats = StatsStore.snapshot(this);
+        if (cachedLargeIcon == null) {
+            cachedLargeIcon = BitmapFactory.decodeResource(getResources(), R.drawable.safepulse_logo);
+        }
         return builder
                 .setContentTitle("SafePulse")
                 .setContentText("Blocked " + stats.blocked + " of " + stats.checked + " DNS requests")
                 .setSmallIcon(R.drawable.ic_notification)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.safepulse_logo))
+                .setLargeIcon(cachedLargeIcon)
                 .setContentIntent(pendingIntent)
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
                 .setOngoing(true)
