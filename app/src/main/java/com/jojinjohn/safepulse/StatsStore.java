@@ -232,6 +232,9 @@ public final class StatsStore {
         if (host.contains("doubleclick") || host.contains("googlesyndication") || host.contains("googleadservices") || host.contains("adservice")) {
             return "Google ads";
         }
+        if (host.contains("porn") || host.contains("xxx") || host.contains("sex") || host.contains("nsfw") || host.contains("adult") || host.contains("nude") || host.contains("cam4") || host.contains("chaturbate") || host.contains("onlyfans") || host.contains("xvideos") || host.contains("xnxx") || host.contains("xhamster") || host.contains("redtube") || host.contains("youporn")) {
+            return "Adult content";
+        }
         return "Ads / tracker";
     }
 

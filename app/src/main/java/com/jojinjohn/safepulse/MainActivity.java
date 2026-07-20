@@ -689,6 +689,14 @@ public class MainActivity extends Activity {
         });
         addTopMargin(settings, redirectProtection, 8);
 
+        CheckBox adultBlock = checkBox("Block adult content (18+)");
+        adultBlock.setChecked(AppSettings.isAdultBlockEnabled(this));
+        adultBlock.setOnCheckedChangeListener((buttonView, checked) -> {
+            AppSettings.setAdultBlockEnabled(this, checked);
+            renderSettingsState();
+        });
+        addTopMargin(settings, adultBlock, 8);
+
         CheckBox autoUpdate = checkBox("Keep block rules updated");
         autoUpdate.setChecked(AppSettings.isAutoUpdateEnabled(this));
         autoUpdate.setOnCheckedChangeListener((buttonView, checked) -> {
@@ -1335,6 +1343,7 @@ public class MainActivity extends Activity {
                         + "Anti-tracking: " + onOff(AppSettings.isAntiTrackingEnabled(this)) + "\n"
                         + "Never-consent: " + onOff(AppSettings.isNeverConsentEnabled(this)) + "\n"
                         + "Redirect protection: " + onOff(AppSettings.isRedirectProtectionEnabled(this)) + "\n"
+                        + "Adult content block: " + onOff(AppSettings.isAdultBlockEnabled(this)) + "\n"
                         + "Auto-start after reboot: " + onOff(AppSettings.isBootStartEnabled(this)) + "\n"
                         + "Auto-update: " + onOff(AppSettings.isAutoUpdateEnabled(this)) + "\n"
                         + updateText

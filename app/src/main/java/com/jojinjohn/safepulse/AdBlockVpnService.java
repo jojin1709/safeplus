@@ -114,6 +114,27 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "mobileads.google.com",
             "googleadapis.l.google.com",
             "encrypted-tbn0.gstatic.com",
+            "jnn-pa.googleapis.com",
+            "play-lh.googleusercontent.com",
+            "yt3.l.google.com",
+            "yt4.l.google.com",
+            "youtube-ui.l.google.com",
+            "wide-youtube.l.google.com",
+            "s2.youtube.com",
+            "www.youtube.com/s/player",
+            "youtube.com/videoplayback",
+            "googleads.g.doubleclick.net",
+            "pagead2.googlesyndication.com",
+            "pagead2.googleadservices.com",
+            "tpc.googlesyndication.com",
+            "googlesyndication.com",
+            "ade.googlesyndication.com",
+            "imasdk.googleapis.com",
+            "fundingchoices.google.com",
+            "fundingchoicesmessages.google.com",
+            "encrypted-tbn0.gstatic.com",
+            "video-stats.l.google.com",
+            "jnn-pa.googleapis.com",
             // Facebook / Meta
             "facebook.net",
             "connect.facebook.net",
@@ -252,7 +273,12 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "companion",
             "overlay",
             "masthead",
-            "bumper"
+            "bumper",
+            "retarget",
+            "remarketing",
+            "impression",
+            "clicktrack",
+            "affiliate"
     };
     private static final String[] STRICT_YOUTUBE_DOMAINS = {
             "googlevideo.com",
@@ -363,7 +389,19 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "hit",
             "impression",
             "view",
-            "engage"
+            "engage",
+            "tag",
+            "tags",
+            "gtm",
+            "ga",
+            "mixpanel",
+            "amplitude",
+            "segment",
+            "heap",
+            "pendo",
+            "hotjar",
+            "clarity",
+            "fullstory"
     };
     private static final String[] CONSENT_DOMAINS = {
             "onetrust.com",
@@ -457,6 +495,106 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "trk",
             "jump",
             "goto"
+    };
+    private static final String[] ADULT_DOMAINS = {
+            "pornhub.com",
+            "xvideos.com",
+            "xnxx.com",
+            "xhamster.com",
+            "redtube.com",
+            "youporn.com",
+            "tube8.com",
+            "spankbang.com",
+            "beeg.com",
+            "brazzers.com",
+            "bangbros.com",
+            "realitykings.com",
+            "mofos.com",
+            "naughtyamerica.com",
+            "digitalplayground.com",
+            "teamskeet.com",
+            "blacked.com",
+            "vixen.com",
+            "tushy.com",
+            "deeper.com",
+            "onlyfans.com",
+            "fansly.com",
+            "chaturbate.com",
+            "livejasmin.com",
+            "stripchat.com",
+            "bongacams.com",
+            "myfreecams.com",
+            "cam4.com",
+            "flirt4free.com",
+            "camsoda.com",
+            "xhamsterlive.com",
+            "spankchat.com",
+            "adultfriendfinder.com",
+            "ashleymadison.com",
+            "fetlife.com",
+            "sex.com",
+            "porntube.com",
+            "drtuber.com",
+            "eporner.com",
+            "txxx.com",
+            "hclips.com",
+            "hdzog.com",
+            "vjav.com",
+            "sxyprn.com",
+            "pornzog.com",
+            "txxx.com",
+            "playvids.com",
+            "porndig.com",
+            "fuq.com",
+            "thumbzilla.com",
+            "tnaflix.com",
+            "porntrex.com",
+            "xcafe.com",
+            "anysex.com",
+            "4tube.com",
+            "daftsex.com",
+            "hotmovs.com",
+            "seexxx.com",
+            "okporn.com",
+            "porn0sex.net",
+            "pornone.com",
+            "pornhat.com",
+            "porn.com",
+            "xgroovy.com",
+            "xxxymovies.com",
+            "ashemaletube.com",
+            "trannyshemale.com",
+            "shemalez.com",
+            " tranny tube",
+            " Shemalez",
+            "gotporn.com",
+            "youjizz.com",
+            "youporn.to",
+            "motherless.com",
+            "heavy-r.com",
+            "efukt.com",
+            "bestgore.com",
+            "theync.com",
+            "zoo.com",
+            "porndoe.com",
+            "porndig.com",
+            "porngo.com",
+            "tubegalore.com",
+            "mrdeepfakes.com",
+            "fapello.com",
+            "thothub.tv",
+            "simpcity.su",
+            "leakedbb.com",
+            "coomer.kiwi",
+            "kemono.su",
+            "nudostar.com",
+            "aznude.com",
+            "celebjihad.com",
+            "celebsecrets.com",
+            "mrdeepfakes.com",
+            "pornpen.ai",
+            "aiporn.net",
+            "deepnude.com"
     };
 
     private ParcelFileDescriptor vpnInterface;
@@ -653,6 +791,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
         if (AppSettings.isDohGuardEnabled(context) && isKnownDohHost(name)) return "Encrypted DNS";
         if (AppSettings.isNeverConsentEnabled(context) && isNeverConsentHost(name)) return "Never-consent";
         if (AppSettings.isRedirectProtectionEnabled(context) && isRedirectHost(name)) return "Redirect protection";
+        if (AppSettings.isAdultBlockEnabled(context) && isAdultBlockHost(name)) return "Adult content";
         if (AppSettings.isAntiTrackingEnabled(context) && isTrackingHost(name)) return "Anti-tracking";
         if (AppSettings.isStrictYoutubeEnabled(context) && isStrictYoutubeHost(name)) return "Strict YouTube";
         if (AppSettings.isAggressiveBlockingEnabled(context) && isAggressiveAdHost(name)) return "Ads / tracker";
@@ -685,11 +824,19 @@ public class AdBlockVpnService extends VpnService implements Runnable {
         return matchesModuleHost(host, REDIRECT_DOMAINS, REDIRECT_LABELS);
     }
 
+    private static boolean isAdultBlockHost(String host) {
+        return matchesModuleHost(host, ADULT_DOMAINS, new String[0]);
+    }
+
     private static boolean matchesModuleHost(String host, String[] domains, String[] labelsToMatch) {
         String name = host.toLowerCase(Locale.ROOT);
         while (!name.isEmpty()) {
             for (String domain : domains) {
-                if (name.equals(domain)) return true;
+                if (domain.contains("*")) {
+                    if (matchesWildcard(name, domain)) return true;
+                } else if (name.equals(domain)) {
+                    return true;
+                }
             }
             int dot = name.indexOf('.');
             if (dot < 0) break;
@@ -709,6 +856,16 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             }
         }
         return false;
+    }
+
+    private static boolean matchesWildcard(String host, String pattern) {
+        int starIndex = pattern.indexOf('*');
+        if (starIndex < 0) return host.equals(pattern);
+        String prefix = pattern.substring(0, starIndex);
+        String suffix = pattern.substring(starIndex + 1);
+        if (!prefix.isEmpty() && !host.startsWith(prefix)) return false;
+        if (!suffix.isEmpty() && !host.endsWith(suffix)) return false;
+        return true;
     }
 
     private static boolean isKnownDohHost(String host) {

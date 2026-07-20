@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.Set;
 
 public final class AppSettings {
-    private static final int SETTINGS_VERSION = 10;
+    private static final int SETTINGS_VERSION = 11;
     private static final String OLD_DEFAULT_BLOCKLIST_URL = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
     public static final String DEFAULT_BLOCKLIST_URL = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\n"
             + "https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt\n"
@@ -28,6 +28,7 @@ public final class AppSettings {
     private static final String KEY_ANTI_TRACKING = "anti_tracking";
     private static final String KEY_NEVER_CONSENT = "never_consent";
     private static final String KEY_REDIRECT_PROTECTION = "redirect_protection";
+    private static final String KEY_ADULT_BLOCK = "adult_block";
     private static final String KEY_DNS_PROVIDER = "dns_provider";
     private static final String KEY_BLOCKLIST_URL = "blocklist_url";
     private static final String KEY_ALLOWLIST = "allowlist";
@@ -59,10 +60,11 @@ public final class AppSettings {
                 .putBoolean(KEY_BOOT_START, preferences.getBoolean(KEY_BOOT_START, false))
                 .putBoolean(KEY_DOH_GUARD, preferences.getBoolean(KEY_DOH_GUARD, true))
                 .putBoolean(KEY_AGGRESSIVE_BLOCKING, preferences.getBoolean(KEY_AGGRESSIVE_BLOCKING, true))
-                .putBoolean(KEY_STRICT_YOUTUBE, preferences.getBoolean(KEY_STRICT_YOUTUBE, true))
+                .putBoolean(KEY_STRICT_YOUTUBE, preferences.getBoolean(KEY_STRICT_YOUTUBE, false))
                 .putBoolean(KEY_ANTI_TRACKING, preferences.getBoolean(KEY_ANTI_TRACKING, true))
                 .putBoolean(KEY_NEVER_CONSENT, preferences.getBoolean(KEY_NEVER_CONSENT, true))
                 .putBoolean(KEY_REDIRECT_PROTECTION, preferences.getBoolean(KEY_REDIRECT_PROTECTION, true))
+                .putBoolean(KEY_ADULT_BLOCK, preferences.getBoolean(KEY_ADULT_BLOCK, false))
                 .putString(KEY_DNS_PROVIDER, preferences.getString(KEY_DNS_PROVIDER, DNS_ADGUARD))
                 .putString(KEY_BLOCKLIST_URL, existingBlocklistUrl)
                 .putString(KEY_ALLOWLIST, preferences.getString(KEY_ALLOWLIST, ""))
@@ -104,7 +106,7 @@ public final class AppSettings {
     }
 
     public static boolean isStrictYoutubeEnabled(Context context) {
-        return prefs(context).getBoolean(KEY_STRICT_YOUTUBE, true);
+        return prefs(context).getBoolean(KEY_STRICT_YOUTUBE, false);
     }
 
     public static void setStrictYoutubeEnabled(Context context, boolean enabled) {
@@ -133,6 +135,14 @@ public final class AppSettings {
 
     public static void setRedirectProtectionEnabled(Context context, boolean enabled) {
         prefs(context).edit().putBoolean(KEY_REDIRECT_PROTECTION, enabled).apply();
+    }
+
+    public static boolean isAdultBlockEnabled(Context context) {
+        return prefs(context).getBoolean(KEY_ADULT_BLOCK, false);
+    }
+
+    public static void setAdultBlockEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(KEY_ADULT_BLOCK, enabled).apply();
     }
 
     public static String getDnsProvider(Context context) {
