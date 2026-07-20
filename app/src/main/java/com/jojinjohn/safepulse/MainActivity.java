@@ -1478,12 +1478,34 @@ public class MainActivity extends Activity {
             statusPill.setBackground(roundRect(SOFT_SUCCESS, 999));
         }
         if (statusText != null) {
-            statusText.setText(running ? "Protection active" : needsVpnApproval ? "VPN approval needed" : "Ready to start");
+            if (AppSettings.isPaused(this)) {
+                long remaining = AppSettings.getPauseUntil(this) - System.currentTimeMillis();
+                long mins = remaining / 60000;
+                long secs = (remaining % 60000) / 1000;
+                statusText.setText("Paused for " + mins + "m " + secs + "s");
+            } else if (running) {
+                statusText.setText("Protection active");
+            } else if (needsVpnApproval) {
+                statusText.setText("VPN approval needed");
+            } else {
+                statusText.setText("Ready to start");
+            }
         }
         if (toggleButton != null) {
-            toggleButton.setText(running ? "Stop protection" : "Start protection");
-            toggleButton.setTextColor(color(running ? Color.WHITE : PRIMARY));
-            toggleButton.setBackground(running ? roundStroke(0x22FFFFFF, 0x55FFFFFF, 16) : roundRect(Color.WHITE, 16));
+            if (AppSettings.isPaused(this)) {
+                toggleButton.setText("Resume now");
+                toggleButton.setTextColor(Color.WHITE);
+                toggleButton.setBackground(roundRect(0xFF22C55E, 16));
+                toggleButton.setOnClickListener(v -> {
+                    AppSettings.resumeNow(this);
+                    renderState();
+                });
+            } else {
+                toggleButton.setText(running ? "Stop protection" : "Start protection");
+                toggleButton.setTextColor(color(running ? Color.WHITE : PRIMARY));
+                toggleButton.setBackground(running ? roundStroke(0x22FFFFFF, 0x55FFFFFF, 16) : roundRect(Color.WHITE, 16));
+                toggleButton.setOnClickListener(this::toggleVpn);
+            }
         }
 
         if (uptimeText != null) {
