@@ -551,6 +551,31 @@ public class MainActivity extends Activity {
         toggleButton.setOnClickListener(this::toggleVpn);
         applyTvFocus(toggleButton);
         addTopMargin(hero, toggleButton, 16, new LinearLayout.LayoutParams(-1, dp(isTvLayout() ? 64 : 54)));
+
+        LinearLayout pauseRow = new LinearLayout(this);
+        pauseRow.setOrientation(LinearLayout.HORIZONTAL);
+        pauseRow.setGravity(Gravity.CENTER);
+        String[] pauseLabels = {"5m", "15m", "30m", "1h"};
+        long[] pauseMinutes = {5, 15, 30, 60};
+        for (int i = 0; i < pauseLabels.length; i++) {
+            Button pauseBtn = new Button(this);
+            pauseBtn.setText(pauseLabels[i]);
+            pauseBtn.setAllCaps(false);
+            pauseBtn.setTextSize(12);
+            pauseBtn.setTextColor(color(PRIMARY_DARK));
+            pauseBtn.setTypeface(typeface(false));
+            pauseBtn.setPadding(dp(8), dp(4), dp(8), dp(4));
+            pauseBtn.setBackground(roundRect(0x22FFFFFF, 12));
+            long mins = pauseMinutes[i];
+            pauseBtn.setOnClickListener(v -> {
+                AppSettings.pauseFor(this, mins);
+                renderState();
+            });
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(36), 1);
+            params.rightMargin = dp(6);
+            pauseRow.addView(pauseBtn, params);
+        }
+        addTopMargin(hero, pauseRow, 10);
     }
 
     private void buildStatsGrid(LinearLayout root) {
@@ -638,6 +663,27 @@ public class MainActivity extends Activity {
         logsText.setBackground(roundRect(0xFFF8FAFC, 16));
         logsText.setPadding(dp(14), dp(12), dp(14), dp(12));
         addTopMargin(logs, logsText, 14);
+
+        Button exportLogs = smallButton("Export logs");
+        exportLogs.setOnClickListener(v -> {
+            StatsStore.Snapshot snap = StatsStore.snapshot(this);
+            StringBuilder sb = new StringBuilder();
+            sb.append("SafePulse Activity Log\n");
+            sb.append("Blocked: ").append(snap.blocked).append(" | Allowed: ").append(snap.allowed).append("\n\n");
+            for (StatsStore.LogEvent event : snap.events) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss", Locale.US);
+                sb.append(sdf.format(new java.util.Date(event.timestamp)))
+                  .append(" | ").append(event.action)
+                  .append(" | ").append(event.host)
+                  .append(" | ").append(event.category).append("\n");
+            }
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                android.content.ClipData clip = android.content.ClipData.newPlainText("SafePulse Logs", sb.toString());
+                clipboard.setPrimaryClip(clip);
+            }
+        });
+        addTopMargin(logs, exportLogs, 10, new LinearLayout.LayoutParams(-1, dp(48)));
     }
 
     private void buildSettings(LinearLayout root) {
@@ -779,6 +825,97 @@ public class MainActivity extends Activity {
         });
         addTopMargin(advanced, dnsSpinner, 8, new LinearLayout.LayoutParams(-1, dp(50)));
 
+        EditText customDnsInput = new EditText(this);
+        customDnsInput.setSingleLine(true);
+        customDnsInput.setHint("Enter custom DNS IP (e.g., 1.1.1.1)");
+        customDnsInput.setTextSize(14);
+        customDnsInput.setTextColor(color(INK));
+        customDnsInput.setHintTextColor(color(MUTED));
+        customDnsInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
+        customDnsInput.setPadding(dp(14), 0, dp(14), 0);
+        customDnsInput.setText(AppSettings.getCustomDns(this));
+        customDnsInput.setVisibility(AppSettings.DNS_CUSTOM.equals(AppSettings.getDnsProvider(this)) ? View.VISIBLE : View.GONE);
+        customDnsInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                AppSettings.setCustomDns(this, customDnsInput.getText().toString());
+            }
+        });
+        customDnsInput.setTag("custom_dns_input");
+        addTopMargin(advanced, customDnsInput, 8, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        TextView presetLabel = text("Blocklist preset", 14, INK, true);
+        addTopMargin(advanced, presetLabel, 16);
+        Spinner presetSpinner = new Spinner(this);
+        String[] presets = AppSettings.blocklistPresets();
+        ArrayAdapter<String> presetAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, presets) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(color(INK));
+                view.setTextSize(14);
+                return view;
+            }
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                view.setTextColor(color(INK));
+                view.setTextSize(14);
+                view.setBackgroundColor(fillColor(CARD_BG));
+                return view;
+            }
+        };
+        presetAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        presetSpinner.setAdapter(presetAdapter);
+        presetSpinner.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
+        presetSpinner.setPadding(dp(12), 0, dp(12), 0);
+        applyTvFocus(presetSpinner);
+        presetSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String urls = AppSettings.getPresetUrls(presets[position]);
+                AppSettings.setBlocklistUrl(MainActivity.this, urls);
+                if (blocklistUrlInput != null) blocklistUrlInput.setText(urls);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+        addTopMargin(advanced, presetSpinner, 8, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        TextView scheduleLabel = text("Schedule blocking", 14, INK, true);
+        addTopMargin(advanced, scheduleLabel, 16);
+        CheckBox scheduleToggle = checkBox("Enable schedule");
+        scheduleToggle.setChecked(AppSettings.isScheduleEnabled(this));
+        scheduleToggle.setOnCheckedChangeListener((b, checked) -> AppSettings.setScheduleEnabled(this, checked));
+        addTopMargin(advanced, scheduleToggle, 8);
+
+        LinearLayout scheduleRow = row();
+        TextView startLabel = text("Pause at", 12, MUTED, false);
+        scheduleRow.addView(startLabel);
+        Button startPicker = smallButton(String.format(Locale.US, "%02d:%02d", AppSettings.getScheduleStartHour(this), AppSettings.getScheduleStartMin(this)));
+        startPicker.setOnClickListener(v -> showTimePicker("Pause at", AppSettings.getScheduleStartHour(this), AppSettings.getScheduleStartMin(this), (h, m) -> {
+            AppSettings.setScheduleStartHour(this, h);
+            AppSettings.setScheduleStartMin(this, m);
+            startPicker.setText(String.format(Locale.US, "%02d:%02d", h, m));
+        }));
+        LinearLayout.LayoutParams startParams = new LinearLayout.LayoutParams(0, dp(46), 1);
+        startParams.leftMargin = dp(10);
+        scheduleRow.addView(startPicker, startParams);
+
+        TextView endLabel = text("Resume at", 12, MUTED, false);
+        addTopMargin(advanced, endLabel, 8);
+        LinearLayout endRow = row();
+        endRow.addView(endLabel);
+        Button endPicker = smallButton(String.format(Locale.US, "%02d:%02d", AppSettings.getScheduleEndHour(this), AppSettings.getScheduleEndMin(this)));
+        endPicker.setOnClickListener(v -> showTimePicker("Resume at", AppSettings.getScheduleEndHour(this), AppSettings.getScheduleEndMin(this), (h, m) -> {
+            AppSettings.setScheduleEndHour(this, h);
+            AppSettings.setScheduleEndMin(this, m);
+            endPicker.setText(String.format(Locale.US, "%02d:%02d", h, m));
+        }));
+        LinearLayout.LayoutParams endParams = new LinearLayout.LayoutParams(0, dp(46), 1);
+        endParams.leftMargin = dp(10);
+        endRow.addView(endPicker, endParams);
+        addTopMargin(advanced, endRow, 8);
+
         TextView bypassTitle = text("App bypass", 14, INK, true);
         addTopMargin(advanced, bypassTitle, 16);
         TextView bypassNote = text("Checked apps will skip SafePulse after protection is restarted.", 12, MUTED, false);
@@ -787,6 +924,28 @@ public class MainActivity extends Activity {
         addBypassCheck(advanced, "Do not protect Chrome", "com.android.chrome");
         addBypassCheck(advanced, "Do not protect Instagram", "com.instagram.android");
         addBypassCheck(advanced, "Do not protect Facebook", "com.facebook.katana");
+
+        TextView allAppsLabel = text("All installed apps", 14, INK, true);
+        addTopMargin(advanced, allAppsLabel, 16);
+        TextView allAppsNote = text("Toggle bypass for any app on your device.", 12, MUTED, false);
+        addTopMargin(advanced, allAppsNote, 5);
+        LinearLayout allAppsListInner = new LinearLayout(this);
+        allAppsListInner.setOrientation(LinearLayout.VERTICAL);
+        java.util.List<AppSettings.InstalledApp> apps = AppSettings.getInstalledApps(this);
+        int shown = 0;
+        for (AppSettings.InstalledApp app : apps) {
+            if (shown >= 30) break;
+            if (app.packageName.equals(getPackageName())) continue;
+            CheckBox appCheck = checkBox(app.name + " (" + app.packageName + ")");
+            appCheck.setChecked(app.bypassed);
+            appCheck.setTextSize(12);
+            appCheck.setOnCheckedChangeListener((b, checked) -> AppSettings.setPackageBypassed(this, app.packageName, checked));
+            allAppsListInner.addView(appCheck);
+            shown++;
+        }
+        ScrollView appsScroll = new ScrollView(this);
+        appsScroll.addView(allAppsListInner);
+        addTopMargin(advanced, appsScroll, 8);
 
         TextView allowTitle = text("Allowed websites", 14, INK, true);
         addTopMargin(advanced, allowTitle, 16);
@@ -875,6 +1034,34 @@ public class MainActivity extends Activity {
             renderState();
         });
         addTopMargin(settings, clearStats, 16, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        TextView dataLabel = text("Data", 14, INK, true);
+        addTopMargin(settings, dataLabel, 16);
+        LinearLayout exportImportRow = row();
+        Button exportBtn = smallButton("Export settings");
+        exportBtn.setOnClickListener(v -> {
+            String json = AppSettings.exportSettings(this);
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                android.content.ClipData clip = android.content.ClipData.newPlainText("SafePulse Settings", json);
+                clipboard.setPrimaryClip(clip);
+            }
+        });
+        exportImportRow.addView(exportBtn, new LinearLayout.LayoutParams(0, dp(46), 1));
+        Button importBtn = smallButton("Import settings");
+        importBtn.setOnClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (clipboard != null && clipboard.hasPrimaryClip()) {
+                CharSequence text = clipboard.getPrimaryClip().getItemAt(0).getText();
+                if (text != null && AppSettings.importSettings(this, text.toString())) {
+                    showTab(TAB_PROTECTION);
+                }
+            }
+        });
+        LinearLayout.LayoutParams importParams = new LinearLayout.LayoutParams(0, dp(46), 1);
+        importParams.leftMargin = dp(10);
+        exportImportRow.addView(importBtn, importParams);
+        addTopMargin(settings, exportImportRow, 8);
     }
 
     private void buildDiagnostics(LinearLayout root) {
@@ -911,6 +1098,37 @@ public class MainActivity extends Activity {
         testResultText.setBackground(roundRect(0xFFF8FAFC, 16));
         testResultText.setPadding(dp(14), dp(12), dp(14), dp(12));
         addTopMargin(test, testResultText, 12);
+
+        LinearLayout searchCard = card(20, CARD_BG);
+        searchCard.setPadding(dp(18), dp(18), dp(18), dp(18));
+        addTopMargin(root, searchCard, 16);
+        searchCard.addView(sectionTitle("Blocklist search", "Check if a domain is blocked"));
+        EditText searchInput = new EditText(this);
+        searchInput.setSingleLine(true);
+        searchInput.setHint("Enter domain (e.g., ads.example.com)");
+        searchInput.setTextSize(14);
+        searchInput.setTextColor(color(INK));
+        searchInput.setHintTextColor(color(MUTED));
+        searchInput.setBackground(roundStroke(0xFFF8FAFC, BORDER, 16));
+        searchInput.setPadding(dp(14), 0, dp(14), 0);
+        applyTvFocus(searchInput);
+        addTopMargin(searchCard, searchInput, 12, new LinearLayout.LayoutParams(-1, dp(50)));
+        TextView searchResult = text("", 13, MUTED, false);
+        searchResult.setLineSpacing(dp(4), 1.0f);
+        searchResult.setBackground(roundRect(0xFFF8FAFC, 16));
+        searchResult.setPadding(dp(14), dp(12), dp(14), dp(12));
+        Button searchBtn = smallButton("Search");
+        searchBtn.setOnClickListener(v -> {
+            String domain = searchInput.getText().toString().trim();
+            if (domain.isEmpty()) return;
+            boolean blocked = BlocklistManager.isDomainBlocked(this, domain);
+            searchResult.setText(blocked ? "BLOCKED: " + domain + " is in the blocklist" : "ALLOWED: " + domain + " is NOT in the blocklist");
+            searchResult.setTextColor(color(blocked ? ERROR : SUCCESS));
+            searchResult.setVisibility(View.VISIBLE);
+        });
+        addTopMargin(searchCard, searchBtn, 10, new LinearLayout.LayoutParams(-1, dp(48)));
+        searchResult.setVisibility(View.GONE);
+        addTopMargin(searchCard, searchResult, 10);
 
         LinearLayout tv = card(20, CARD_BG);
         tv.setPadding(dp(18), dp(18), dp(18), dp(18));
@@ -1580,6 +1798,40 @@ public class MainActivity extends Activity {
         } catch (PackageManager.NameNotFoundException e) {
             return false;
         }
+    }
+
+    private interface TimePickerCallback {
+        void onTimeSelected(int hour, int minute);
+    }
+
+    private void showTimePicker(String title, int currentHour, int currentMinute, TimePickerCallback callback) {
+        new android.app.AlertDialog.Builder(this, isDarkMode() ? android.R.style.Theme_Material_Dialog_Alert : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT)
+                .setTitle(title)
+                .setPositiveButton("OK", (d, w) -> {
+                    android.widget.NumberPicker hourPicker = new android.widget.NumberPicker(this);
+                    hourPicker.setMinValue(0);
+                    hourPicker.setMaxValue(23);
+                    hourPicker.setValue(currentHour);
+                    android.widget.NumberPicker minPicker = new android.widget.NumberPicker(this);
+                    minPicker.setMinValue(0);
+                    minPicker.setMaxValue(59);
+                    minPicker.setValue(currentMinute);
+                    LinearLayout layout = new LinearLayout(this);
+                    layout.setOrientation(LinearLayout.HORIZONTAL);
+                    layout.setGravity(Gravity.CENTER);
+                    layout.addView(hourPicker, new LinearLayout.LayoutParams(-2, -2));
+                    TextView colon = text(":", 20, INK, true);
+                    layout.addView(colon);
+                    layout.addView(minPicker, new LinearLayout.LayoutParams(-2, -2));
+                    new android.app.AlertDialog.Builder(this, isDarkMode() ? android.R.style.Theme_Material_Dialog_Alert : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT)
+                            .setTitle(title)
+                            .setView(layout)
+                            .setPositiveButton("OK", (dd, ww) -> callback.onTimeSelected(hourPicker.getValue(), minPicker.getValue()))
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void openBatterySettings() {
