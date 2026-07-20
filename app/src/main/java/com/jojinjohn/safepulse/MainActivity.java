@@ -1903,16 +1903,7 @@ public class MainActivity extends Activity {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         window.setStatusBarColor(color(BG));
         window.setNavigationBarColor(color(BG));
-        if (Build.VERSION.SDK_INT >= 30) {
-            android.view.WindowInsetsController controller = window.getInsetsController();
-            if (controller != null) {
-                int appearance = isDarkMode() ? 0 : android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS;
-                if (!isDarkMode()) {
-                    appearance |= android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-                }
-                controller.setSystemBarsAppearance(appearance, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
-            }
-        } else if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23) {
             int flags = isDarkMode() ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             if (!isDarkMode() && Build.VERSION.SDK_INT >= 26) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
