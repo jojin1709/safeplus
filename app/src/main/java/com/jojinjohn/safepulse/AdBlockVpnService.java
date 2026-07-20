@@ -121,6 +121,17 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "youtube-ui.l.google.com",
             "wide-youtube.l.google.com",
             "s2.youtube.com",
+            "jnn-pa.googleapis.com",
+            "play-lh.googleusercontent.com",
+            "yt3.l.google.com",
+            "yt4.l.google.com",
+            "encrypted-tbn0.gstatic.com",
+            "video-stats.l.google.com",
+            "youtube-ui.l.google.com",
+            "yt3.ggpht.com",
+            "yt3.googleusercontent.com",
+            "i.ytimg.com",
+            "i9.ytimg.com",
             "www.youtube.com/s/player",
             "youtube.com/videoplayback",
             "googleads.g.doubleclick.net",
@@ -132,9 +143,14 @@ public class AdBlockVpnService extends VpnService implements Runnable {
             "imasdk.googleapis.com",
             "fundingchoices.google.com",
             "fundingchoicesmessages.google.com",
-            "encrypted-tbn0.gstatic.com",
-            "video-stats.l.google.com",
-            "jnn-pa.googleapis.com",
+            "youtube.com/api/stats/ads",
+            "youtube.com/api/stats/qoe",
+            "youtube.com/get_video_info",
+            "youtube.com/ptracking",
+            "youtube.com/youtubei/v1/log_event",
+            "youtube.com/s/player",
+            "play.google.com/log",
+            "play.google.com/gen204",
             // Facebook / Meta
             "facebook.net",
             "connect.facebook.net",
@@ -781,6 +797,7 @@ public class AdBlockVpnService extends VpnService implements Runnable {
     }
 
     private String blockReason(String host) {
+        if (AppSettings.isPaused(this) || AppSettings.isInScheduledPause(this)) return null;
         return blockReasonForHost(this, blocklist, host);
     }
 

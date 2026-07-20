@@ -2,7 +2,17 @@ package com.jojinjohn.safepulse;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -11,7 +21,7 @@ import java.util.Locale;
 import java.util.Set;
 
 public final class AppSettings {
-    private static final int SETTINGS_VERSION = 11;
+    private static final int SETTINGS_VERSION = 12;
     private static final String OLD_DEFAULT_BLOCKLIST_URL = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
     public static final String DEFAULT_BLOCKLIST_URL = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\n"
             + "https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt\n"
@@ -30,15 +40,29 @@ public final class AppSettings {
     private static final String KEY_REDIRECT_PROTECTION = "redirect_protection";
     private static final String KEY_ADULT_BLOCK = "adult_block";
     private static final String KEY_DNS_PROVIDER = "dns_provider";
+    private static final String KEY_CUSTOM_DNS = "custom_dns";
     private static final String KEY_BLOCKLIST_URL = "blocklist_url";
     private static final String KEY_ALLOWLIST = "allowlist";
     private static final String KEY_BYPASS_PACKAGES = "bypass_packages";
     private static final String KEY_DARK_MODE = "dark_mode";
+    private static final String KEY_PAUSE_UNTIL = "pause_until";
+    private static final String KEY_SCHEDULE_ENABLED = "schedule_enabled";
+    private static final String KEY_SCHEDULE_START_HOUR = "schedule_start_hour";
+    private static final String KEY_SCHEDULE_START_MIN = "schedule_start_min";
+    private static final String KEY_SCHEDULE_END_HOUR = "schedule_end_hour";
+    private static final String KEY_SCHEDULE_END_MIN = "schedule_end_min";
+    private static final String KEY_UPDATE_INTERVAL = "update_interval";
 
     public static final String DNS_CLOUDFLARE = "Cloudflare";
     public static final String DNS_GOOGLE = "Google";
     public static final String DNS_QUAD9 = "Quad9";
     public static final String DNS_ADGUARD = "AdGuard";
+    public static final String DNS_CUSTOM = "Custom";
+
+    public static final String PRESET_OISD = "OISD (Aggressive)";
+    public static final String PRESET_ENERGIZED = "Energized Lite";
+    public static final String PRESET_ADGUARD = "AdGuard Default";
+    public static final String PRESET_DEFAULT = "Default (4 sources)";
 
     private AppSettings() {
     }
@@ -66,13 +90,131 @@ public final class AppSettings {
                 .putBoolean(KEY_REDIRECT_PROTECTION, preferences.getBoolean(KEY_REDIRECT_PROTECTION, true))
                 .putBoolean(KEY_ADULT_BLOCK, preferences.getBoolean(KEY_ADULT_BLOCK, false))
                 .putString(KEY_DNS_PROVIDER, preferences.getString(KEY_DNS_PROVIDER, DNS_ADGUARD))
+                .putString(KEY_CUSTOM_DNS, preferences.getString(KEY_CUSTOM_DNS, ""))
                 .putString(KEY_BLOCKLIST_URL, existingBlocklistUrl)
                 .putString(KEY_ALLOWLIST, preferences.getString(KEY_ALLOWLIST, ""))
                 .putString(KEY_BYPASS_PACKAGES, preferences.getString(KEY_BYPASS_PACKAGES, ""))
-                .putBoolean(KEY_DARK_MODE, preferences.getBoolean(KEY_DARK_MODE, false));
+                .putBoolean(KEY_DARK_MODE, preferences.getBoolean(KEY_DARK_MODE, false))
+                .putLong(KEY_PAUSE_UNTIL, preferences.getLong(KEY_PAUSE_UNTIL, 0L))
+                .putBoolean(KEY_SCHEDULE_ENABLED, preferences.getBoolean(KEY_SCHEDULE_ENABLED, false))
+                .putInt(KEY_SCHEDULE_START_HOUR, preferences.getInt(KEY_SCHEDULE_START_HOUR, 22))
+                .putInt(KEY_SCHEDULE_START_MIN, preferences.getInt(KEY_SCHEDULE_START_MIN, 0))
+                .putInt(KEY_SCHEDULE_END_HOUR, preferences.getInt(KEY_SCHEDULE_END_HOUR, 7))
+                .putInt(KEY_SCHEDULE_END_MIN, preferences.getInt(KEY_SCHEDULE_END_MIN, 0))
+                .putString(KEY_UPDATE_INTERVAL, preferences.getString(KEY_UPDATE_INTERVAL, "24"));
         editor.apply();
     }
 
+    // === Pause Timer ===
+    public static boolean isPaused(Context context) {
+        return System.currentTimeMillis() < getPauseUntil(context);
+    }
+
+    public static long getPauseUntil(Context context) {
+        return prefs(context).getLong(KEY_PAUSE_UNTIL, 0L);
+    }
+
+    public static void pauseFor(Context context, long minutes) {
+        long until = System.currentTimeMillis() + (minutes * 60 * 1000);
+        prefs(context).edit().putLong(KEY_PAUSE_UNTIL, until).apply();
+    }
+
+    public static void resumeNow(Context context) {
+        prefs(context).edit().putLong(KEY_PAUSE_UNTIL, 0L).apply();
+    }
+
+    // === Schedule ===
+    public static boolean isScheduleEnabled(Context context) {
+        return prefs(context).getBoolean(KEY_SCHEDULE_ENABLED, false);
+    }
+
+    public static void setScheduleEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(KEY_SCHEDULE_ENABLED, enabled).apply();
+    }
+
+    public static int getScheduleStartHour(Context context) {
+        return prefs(context).getInt(KEY_SCHEDULE_START_HOUR, 22);
+    }
+
+    public static void setScheduleStartHour(Context context, int hour) {
+        prefs(context).edit().putInt(KEY_SCHEDULE_START_HOUR, hour).apply();
+    }
+
+    public static int getScheduleStartMin(Context context) {
+        return prefs(context).getInt(KEY_SCHEDULE_START_MIN, 0);
+    }
+
+    public static void setScheduleStartMin(Context context, int min) {
+        prefs(context).edit().putInt(KEY_SCHEDULE_START_MIN, min).apply();
+    }
+
+    public static int getScheduleEndHour(Context context) {
+        return prefs(context).getInt(KEY_SCHEDULE_END_HOUR, 7);
+    }
+
+    public static void setScheduleEndHour(Context context, int hour) {
+        prefs(context).edit().putInt(KEY_SCHEDULE_END_HOUR, hour).apply();
+    }
+
+    public static int getScheduleEndMin(Context context) {
+        return prefs(context).getInt(KEY_SCHEDULE_END_MIN, 0);
+    }
+
+    public static void setScheduleEndMin(Context context, int min) {
+        prefs(context).edit().putInt(KEY_SCHEDULE_END_MIN, min).apply();
+    }
+
+    public static boolean isInScheduledPause(Context context) {
+        if (!isScheduleEnabled(context)) return false;
+        long now = System.currentTimeMillis();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+        int min = cal.get(java.util.Calendar.MINUTE);
+        int current = hour * 60 + min;
+        int start = getScheduleStartHour(context) * 60 + getScheduleStartMin(context);
+        int end = getScheduleEndHour(context) * 60 + getScheduleEndMin(context);
+        if (start > end) {
+            return current >= start || current < end;
+        }
+        return current >= start && current < end;
+    }
+
+    // === Blocklist Presets ===
+    public static String[] blocklistPresets() {
+        return new String[]{PRESET_DEFAULT, PRESET_OISD, PRESET_ENERGIZED, PRESET_ADGUARD};
+    }
+
+    public static String getPresetUrls(String preset) {
+        if (PRESET_OISD.equals(preset)) {
+            return "https://big.oisd.nl/\nhttps://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
+        }
+        if (PRESET_ENERGIZED.equals(preset)) {
+            return "https://blocklistproject.github.io/Lists/ads.txt\nhttps://blocklistproject.github.io/Lists/tracking.txt\nhttps://blocklistproject.github.io/Lists/porn.txt";
+        }
+        if (PRESET_ADGUARD.equals(preset)) {
+            return "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt\nhttps://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt";
+        }
+        return DEFAULT_BLOCKLIST_URL;
+    }
+
+    // === Update Interval ===
+    public static String getUpdateInterval(Context context) {
+        return prefs(context).getString(KEY_UPDATE_INTERVAL, "24");
+    }
+
+    public static void setUpdateInterval(Context context, String hours) {
+        prefs(context).edit().putString(KEY_UPDATE_INTERVAL, hours).apply();
+    }
+
+    public static long getUpdateIntervalMillis(Context context) {
+        try {
+            return Long.parseLong(getUpdateInterval(context)) * 3600 * 1000;
+        } catch (Exception e) {
+            return 24 * 3600 * 1000;
+        }
+    }
+
+    // === Core Settings ===
     public static boolean isAutoUpdateEnabled(Context context) {
         return prefs(context).getBoolean(KEY_AUTO_UPDATE, true);
     }
@@ -145,6 +287,7 @@ public final class AppSettings {
         prefs(context).edit().putBoolean(KEY_ADULT_BLOCK, enabled).apply();
     }
 
+    // === DNS ===
     public static String getDnsProvider(Context context) {
         return prefs(context).getString(KEY_DNS_PROVIDER, DNS_ADGUARD);
     }
@@ -153,12 +296,27 @@ public final class AppSettings {
         prefs(context).edit().putString(KEY_DNS_PROVIDER, provider).apply();
     }
 
+    public static String getCustomDns(Context context) {
+        return prefs(context).getString(KEY_CUSTOM_DNS, "");
+    }
+
+    public static void setCustomDns(Context context, String dns) {
+        prefs(context).edit().putString(KEY_CUSTOM_DNS, dns.trim()).apply();
+    }
+
     public static List<String> dnsProviders() {
-        return Arrays.asList(DNS_CLOUDFLARE, DNS_GOOGLE, DNS_QUAD9, DNS_ADGUARD);
+        return Arrays.asList(DNS_CLOUDFLARE, DNS_GOOGLE, DNS_QUAD9, DNS_ADGUARD, DNS_CUSTOM);
     }
 
     public static String[] getDnsServers(Context context) {
         String provider = getDnsProvider(context);
+        if (DNS_CUSTOM.equals(provider)) {
+            String custom = getCustomDns(context);
+            if (!custom.isEmpty()) {
+                return new String[]{custom};
+            }
+            return new String[]{"94.140.14.14", "94.140.15.15"};
+        }
         if (DNS_GOOGLE.equals(provider)) {
             return new String[]{"8.8.8.8", "8.8.4.4", "2001:4860:4860::8888", "2001:4860:4860::8844"};
         }
@@ -171,6 +329,7 @@ public final class AppSettings {
         return new String[]{"1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"};
     }
 
+    // === Blocklist ===
     public static String getBlocklistUrl(Context context) {
         String source = prefs(context).getString(KEY_BLOCKLIST_URL, DEFAULT_BLOCKLIST_URL);
         if (source == null || source.trim().isEmpty() || OLD_DEFAULT_BLOCKLIST_URL.equals(source.trim())) {
@@ -194,6 +353,7 @@ public final class AppSettings {
         prefs(context).edit().putString(KEY_BLOCKLIST_URL, url.trim()).apply();
     }
 
+    // === Allowlist ===
     public static Set<String> getAllowlist(Context context) {
         return parseLines(prefs(context).getString(KEY_ALLOWLIST, ""));
     }
@@ -205,6 +365,12 @@ public final class AppSettings {
         boolean added = allowlist.add(normalized);
         saveLines(context, KEY_ALLOWLIST, allowlist);
         return added;
+    }
+
+    public static void removeAllowedDomain(Context context, String domain) {
+        Set<String> allowlist = getAllowlist(context);
+        allowlist.remove(normalizeDomain(domain));
+        saveLines(context, KEY_ALLOWLIST, allowlist);
     }
 
     public static void clearAllowlist(Context context) {
@@ -224,6 +390,7 @@ public final class AppSettings {
         return false;
     }
 
+    // === Bypass Packages ===
     public static Set<String> getBypassPackages(Context context) {
         return parseLines(prefs(context).getString(KEY_BYPASS_PACKAGES, ""));
     }
@@ -242,6 +409,19 @@ public final class AppSettings {
         return getBypassPackages(context).contains(packageName);
     }
 
+    public static List<InstalledApp> getInstalledApps(Context context) {
+        List<InstalledApp> apps = new ArrayList<>();
+        PackageManager pm = context.getPackageManager();
+        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        for (ApplicationInfo info : packages) {
+            String name = pm.getApplicationLabel(info).toString();
+            apps.add(new InstalledApp(info.packageName, name, isPackageBypassed(context, info.packageName)));
+        }
+        apps.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        return apps;
+    }
+
+    // === Dark Mode ===
     public static boolean isDarkModeEnabled(Context context) {
         return prefs(context).getBoolean(KEY_DARK_MODE, false);
     }
@@ -250,6 +430,88 @@ public final class AppSettings {
         prefs(context).edit().putBoolean(KEY_DARK_MODE, enabled).apply();
     }
 
+    // === Export / Import ===
+    public static String exportSettings(Context context) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("auto_update", isAutoUpdateEnabled(context));
+            json.put("boot_start", isBootStartEnabled(context));
+            json.put("doh_guard", isDohGuardEnabled(context));
+            json.put("aggressive_blocking", isAggressiveBlockingEnabled(context));
+            json.put("strict_youtube", isStrictYoutubeEnabled(context));
+            json.put("anti_tracking", isAntiTrackingEnabled(context));
+            json.put("never_consent", isNeverConsentEnabled(context));
+            json.put("redirect_protection", isRedirectProtectionEnabled(context));
+            json.put("adult_block", isAdultBlockEnabled(context));
+            json.put("dns_provider", getDnsProvider(context));
+            json.put("custom_dns", getCustomDns(context));
+            json.put("blocklist_url", getBlocklistUrl(context));
+            json.put("dark_mode", isDarkModeEnabled(context));
+            json.put("schedule_enabled", isScheduleEnabled(context));
+            json.put("schedule_start_hour", getScheduleStartHour(context));
+            json.put("schedule_start_min", getScheduleStartMin(context));
+            json.put("schedule_end_hour", getScheduleEndHour(context));
+            json.put("schedule_end_min", getScheduleEndMin(context));
+            JSONArray allowlistArr = new JSONArray();
+            for (String d : getAllowlist(context)) allowlistArr.put(d);
+            json.put("allowlist", allowlistArr);
+            JSONArray bypassArr = new JSONArray();
+            for (String p : getBypassPackages(context)) bypassArr.put(p);
+            json.put("bypass_packages", bypassArr);
+            return json.toString(2);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    public static boolean importSettings(Context context, String jsonStr) {
+        try {
+            JSONObject json = new JSONObject(jsonStr);
+            SharedPreferences.Editor editor = prefs(context).edit();
+            if (json.has("auto_update")) editor.putBoolean(KEY_AUTO_UPDATE, json.getBoolean("auto_update"));
+            if (json.has("boot_start")) editor.putBoolean(KEY_BOOT_START, json.getBoolean("boot_start"));
+            if (json.has("doh_guard")) editor.putBoolean(KEY_DOH_GUARD, json.getBoolean("doh_guard"));
+            if (json.has("aggressive_blocking")) editor.putBoolean(KEY_AGGRESSIVE_BLOCKING, json.getBoolean("aggressive_blocking"));
+            if (json.has("strict_youtube")) editor.putBoolean(KEY_STRICT_YOUTUBE, json.getBoolean("strict_youtube"));
+            if (json.has("anti_tracking")) editor.putBoolean(KEY_ANTI_TRACKING, json.getBoolean("anti_tracking"));
+            if (json.has("never_consent")) editor.putBoolean(KEY_NEVER_CONSENT, json.getBoolean("never_consent"));
+            if (json.has("redirect_protection")) editor.putBoolean(KEY_REDIRECT_PROTECTION, json.getBoolean("redirect_protection"));
+            if (json.has("adult_block")) editor.putBoolean(KEY_ADULT_BLOCK, json.getBoolean("adult_block"));
+            if (json.has("dns_provider")) editor.putString(KEY_DNS_PROVIDER, json.getString("dns_provider"));
+            if (json.has("custom_dns")) editor.putString(KEY_CUSTOM_DNS, json.getString("custom_dns"));
+            if (json.has("blocklist_url")) editor.putString(KEY_BLOCKLIST_URL, json.getString("blocklist_url"));
+            if (json.has("dark_mode")) editor.putBoolean(KEY_DARK_MODE, json.getBoolean("dark_mode"));
+            if (json.has("schedule_enabled")) editor.putBoolean(KEY_SCHEDULE_ENABLED, json.getBoolean("schedule_enabled"));
+            if (json.has("schedule_start_hour")) editor.putInt(KEY_SCHEDULE_START_HOUR, json.getInt("schedule_start_hour"));
+            if (json.has("schedule_start_min")) editor.putInt(KEY_SCHEDULE_START_MIN, json.getInt("schedule_start_min"));
+            if (json.has("schedule_end_hour")) editor.putInt(KEY_SCHEDULE_END_HOUR, json.getInt("schedule_end_hour"));
+            if (json.has("schedule_end_min")) editor.putInt(KEY_SCHEDULE_END_MIN, json.getInt("schedule_end_min"));
+            if (json.has("allowlist")) {
+                JSONArray arr = json.getJSONArray("allowlist");
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < arr.length(); i++) {
+                    if (i > 0) sb.append("\n");
+                    sb.append(arr.getString(i));
+                }
+                editor.putString(KEY_ALLOWLIST, sb.toString());
+            }
+            if (json.has("bypass_packages")) {
+                JSONArray arr = json.getJSONArray("bypass_packages");
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < arr.length(); i++) {
+                    if (i > 0) sb.append("\n");
+                    sb.append(arr.getString(i));
+                }
+                editor.putString(KEY_BYPASS_PACKAGES, sb.toString());
+            }
+            editor.apply();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // === Helpers ===
     private static Set<String> parseLines(String raw) {
         Set<String> values = new LinkedHashSet<>();
         if (raw == null || raw.isEmpty()) return values;
@@ -278,5 +540,17 @@ public final class AppSettings {
 
     private static SharedPreferences prefs(Context context) {
         return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    public static final class InstalledApp {
+        public final String packageName;
+        public final String name;
+        public boolean bypassed;
+
+        public InstalledApp(String packageName, String name, boolean bypassed) {
+            this.packageName = packageName;
+            this.name = name;
+            this.bypassed = bypassed;
+        }
     }
 }

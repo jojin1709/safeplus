@@ -259,6 +259,18 @@ public final class StatsStore {
             if (checked == 0L) return 0;
             return (int) Math.round((blocked * 100.0d) / checked);
         }
+
+        public long dataSavedBytes() {
+            return blocked * 3500L;
+        }
+
+        public String dataSavedFormatted() {
+            long bytes = dataSavedBytes();
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return String.format(Locale.US, "%.1f KB", bytes / 1024.0);
+            if (bytes < 1024 * 1024 * 1024) return String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024));
+            return String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024 * 1024));
+        }
     }
 
     public static final class RecentBlock {

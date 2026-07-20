@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public final class BlocklistManager {
     private static final String PREFS = "blocklist_meta";
@@ -41,7 +40,7 @@ public final class BlocklistManager {
     public static boolean shouldAutoUpdate(Context context) {
         String lastSource = prefs(context).getString(KEY_LAST_SOURCE, "");
         if (!AppSettings.getBlocklistUrl(context).equals(lastSource)) return true;
-        return System.currentTimeMillis() - lastUpdate(context) > TimeUnit.HOURS.toMillis(24);
+        return System.currentTimeMillis() - lastUpdate(context) > AppSettings.getUpdateIntervalMillis(context);
     }
 
     public static UpdateResult updateFromSource(Context context) {
@@ -130,6 +129,18 @@ public final class BlocklistManager {
 
     public static String lastError(Context context) {
         return prefs(context).getString(KEY_LAST_ERROR, "");
+    }
+
+    public static boolean isDomainBlocked(Context context, String domain) {
+        Set<String> blocklist = loadEffectiveBlocklist(context);
+        String name = domain.toLowerCase(Locale.ROOT).trim();
+        while (!name.isEmpty()) {
+            if (blocklist.contains(name)) return true;
+            int dot = name.indexOf('.');
+            if (dot < 0) break;
+            name = name.substring(dot + 1);
+        }
+        return false;
     }
 
     private static void loadBundled(Context context, Set<String> domains) {
