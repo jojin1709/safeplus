@@ -904,7 +904,8 @@ public class MainActivity extends Activity {
         TextView endLabel = text("Resume at", 12, MUTED, false);
         addTopMargin(advanced, endLabel, 8);
         LinearLayout endRow = row();
-        endRow.addView(endLabel);
+        TextView endLabel2 = text("Resume at", 12, MUTED, false);
+        endRow.addView(endLabel2);
         Button endPicker = smallButton(String.format(Locale.US, "%02d:%02d", AppSettings.getScheduleEndHour(this), AppSettings.getScheduleEndMin(this)));
         endPicker.setOnClickListener(v -> showTimePicker("Resume at", AppSettings.getScheduleEndHour(this), AppSettings.getScheduleEndMin(this), (h, m) -> {
             AppSettings.setScheduleEndHour(this, h);
@@ -1804,34 +1805,14 @@ public class MainActivity extends Activity {
         void onTimeSelected(int hour, int minute);
     }
 
+    @SuppressWarnings("deprecation")
     private void showTimePicker(String title, int currentHour, int currentMinute, TimePickerCallback callback) {
-        new android.app.AlertDialog.Builder(this, isDarkMode() ? android.R.style.Theme_Material_Dialog_Alert : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT)
-                .setTitle(title)
-                .setPositiveButton("OK", (d, w) -> {
-                    android.widget.NumberPicker hourPicker = new android.widget.NumberPicker(this);
-                    hourPicker.setMinValue(0);
-                    hourPicker.setMaxValue(23);
-                    hourPicker.setValue(currentHour);
-                    android.widget.NumberPicker minPicker = new android.widget.NumberPicker(this);
-                    minPicker.setMinValue(0);
-                    minPicker.setMaxValue(59);
-                    minPicker.setValue(currentMinute);
-                    LinearLayout layout = new LinearLayout(this);
-                    layout.setOrientation(LinearLayout.HORIZONTAL);
-                    layout.setGravity(Gravity.CENTER);
-                    layout.addView(hourPicker, new LinearLayout.LayoutParams(-2, -2));
-                    TextView colon = text(":", 20, INK, true);
-                    layout.addView(colon);
-                    layout.addView(minPicker, new LinearLayout.LayoutParams(-2, -2));
-                    new android.app.AlertDialog.Builder(this, isDarkMode() ? android.R.style.Theme_Material_Dialog_Alert : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT)
-                            .setTitle(title)
-                            .setView(layout)
-                            .setPositiveButton("OK", (dd, ww) -> callback.onTimeSelected(hourPicker.getValue(), minPicker.getValue()))
-                            .setNegativeButton("Cancel", null)
-                            .show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        android.app.TimePickerDialog dialog = new android.app.TimePickerDialog(this,
+                isDarkMode() ? android.app.AlertDialog.THEME_DEVICE_DEFAULT_DARK : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT,
+                (view, hourOfDay, minute) -> callback.onTimeSelected(hourOfDay, minute),
+                currentHour, currentMinute, true);
+        dialog.setTitle(title);
+        dialog.show();
     }
 
     private void openBatterySettings() {
