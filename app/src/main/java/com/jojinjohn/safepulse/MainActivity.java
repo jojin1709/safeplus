@@ -555,24 +555,24 @@ public class MainActivity extends Activity {
         LinearLayout pauseRow = new LinearLayout(this);
         pauseRow.setOrientation(LinearLayout.HORIZONTAL);
         pauseRow.setGravity(Gravity.CENTER);
-        String[] pauseLabels = {"5m", "15m", "30m", "1h"};
+        String[] pauseLabels = {"Pause 5m", "Pause 15m", "Pause 30m", "Pause 1h"};
         long[] pauseMinutes = {5, 15, 30, 60};
         for (int i = 0; i < pauseLabels.length; i++) {
             Button pauseBtn = new Button(this);
             pauseBtn.setText(pauseLabels[i]);
             pauseBtn.setAllCaps(false);
-            pauseBtn.setTextSize(12);
-            pauseBtn.setTextColor(color(PRIMARY_DARK));
+            pauseBtn.setTextSize(11);
+            pauseBtn.setTextColor(Color.WHITE);
             pauseBtn.setTypeface(typeface(false));
-            pauseBtn.setPadding(dp(8), dp(4), dp(8), dp(4));
-            pauseBtn.setBackground(roundRect(0x22FFFFFF, 12));
+            pauseBtn.setPadding(dp(6), dp(4), dp(6), dp(4));
+            pauseBtn.setBackground(roundRect(0x33FFFFFF, 12));
             long mins = pauseMinutes[i];
             pauseBtn.setOnClickListener(v -> {
                 AppSettings.pauseFor(this, mins);
                 renderState();
             });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(36), 1);
-            params.rightMargin = dp(6);
+            params.rightMargin = dp(4);
             pauseRow.addView(pauseBtn, params);
         }
         addTopMargin(hero, pauseRow, 10);
@@ -926,27 +926,13 @@ public class MainActivity extends Activity {
         addBypassCheck(advanced, "Do not protect Instagram", "com.instagram.android");
         addBypassCheck(advanced, "Do not protect Facebook", "com.facebook.katana");
 
-        TextView allAppsLabel = text("All installed apps", 14, INK, true);
+        TextView allAppsLabel = text("App bypass (all)", 14, INK, true);
         addTopMargin(advanced, allAppsLabel, 16);
-        TextView allAppsNote = text("Toggle bypass for any app on your device.", 12, MUTED, false);
+        TextView allAppsNote = text("Tap below to see all apps and toggle bypass for each.", 12, MUTED, false);
         addTopMargin(advanced, allAppsNote, 5);
-        LinearLayout allAppsListInner = new LinearLayout(this);
-        allAppsListInner.setOrientation(LinearLayout.VERTICAL);
-        java.util.List<AppSettings.InstalledApp> apps = AppSettings.getInstalledApps(this);
-        int shown = 0;
-        for (AppSettings.InstalledApp app : apps) {
-            if (shown >= 30) break;
-            if (app.packageName.equals(getPackageName())) continue;
-            CheckBox appCheck = checkBox(app.name + " (" + app.packageName + ")");
-            appCheck.setChecked(app.bypassed);
-            appCheck.setTextSize(12);
-            appCheck.setOnCheckedChangeListener((b, checked) -> AppSettings.setPackageBypassed(this, app.packageName, checked));
-            allAppsListInner.addView(appCheck);
-            shown++;
-        }
-        ScrollView appsScroll = new ScrollView(this);
-        appsScroll.addView(allAppsListInner);
-        addTopMargin(advanced, appsScroll, 8);
+        Button showAllApps = smallButton("Manage all apps");
+        showAllApps.setOnClickListener(v -> showAllAppsDialog());
+        addTopMargin(advanced, showAllApps, 8, new LinearLayout.LayoutParams(-1, dp(48)));
 
         TextView allowTitle = text("Allowed websites", 14, INK, true);
         addTopMargin(advanced, allowTitle, 16);
@@ -1813,6 +1799,34 @@ public class MainActivity extends Activity {
                 currentHour, currentMinute, true);
         dialog.setTitle(title);
         dialog.show();
+    }
+
+    private void showAllAppsDialog() {
+        try {
+            java.util.List<AppSettings.InstalledApp> apps = AppSettings.getInstalledApps(this);
+            LinearLayout list = new LinearLayout(this);
+            list.setOrientation(LinearLayout.VERTICAL);
+            list.setPadding(dp(16), dp(8), dp(16), dp(8));
+            for (AppSettings.InstalledApp app : apps) {
+                if (app.packageName.equals(getPackageName())) continue;
+                CheckBox cb = new CheckBox(this);
+                cb.setText(app.name);
+                cb.setChecked(app.bypassed);
+                cb.setTextSize(13);
+                cb.setTextColor(color(INK));
+                cb.setOnCheckedChangeListener((b, checked) -> AppSettings.setPackageBypassed(this, app.packageName, checked));
+                list.addView(cb);
+            }
+            ScrollView sv = new ScrollView(this);
+            sv.addView(list);
+            new android.app.AlertDialog.Builder(this, isDarkMode() ? android.R.style.Theme_Material_Dialog_Alert : android.app.AlertDialog.THEME_DEVICE_DEFAULT_LIGHT)
+                    .setTitle("App Bypass")
+                    .setView(sv)
+                    .setPositiveButton("Done", null)
+                    .show();
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     private void openBatterySettings() {
